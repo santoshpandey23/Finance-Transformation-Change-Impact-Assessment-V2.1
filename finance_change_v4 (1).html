@@ -1,0 +1,1957 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Finance Change Impact Assessment — S/4HANA</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --navy:   #0B1629;
+  --navy-2: #132040;
+  --navy-3: #1C3058;
+  --gold:   #C8A84B;
+  --gold-lt:#E6C96E;
+  --gold-dk:#9A7A2E;
+  --gold-bg:#FFFBEF;
+  --teal:   #0D9488;
+  --red:    #DC2626;
+  --red-lt: #FEE2E2;
+  --amber:  #D97706;
+  --amber-lt:#FEF3C7;
+  --green:  #16A34A;
+  --green-lt:#DCFCE7;
+  --purple: #7C3AED;
+  --blue:   #2563EB;
+  --blue-lt:#DBEAFE;
+  --bg:     #F0F3F8;
+  --card:   #FFFFFF;
+  --border: #E4E9F0;
+  --gray-50:#F8FAFC;
+  --gray-100:#F1F5F9;
+  --gray-200:#E2E8F0;
+  --gray-400:#94A3B8;
+  --gray-500:#64748B;
+  --gray-600:#475569;
+  --gray-700:#334155;
+  --gray-800:#1E293B;
+  --gray-900:#0F172A;
+  --shadow: 0 1px 3px rgba(11,22,41,.07), 0 4px 16px rgba(11,22,41,.05);
+  --shadow-lg: 0 8px 32px rgba(11,22,41,.13);
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Sora', sans-serif;
+  background: var(--bg);
+  color: var(--gray-800);
+  min-height: 100vh;
+  display: flex;
+}
+
+/* ── SIDEBAR ─────────────────────────────── */
+.sidebar {
+  width: 220px; min-width: 220px;
+  background: var(--navy);
+  display: flex; flex-direction: column;
+  position: fixed; top: 0; left: 0; bottom: 0;
+  z-index: 100;
+  border-right: 1px solid rgba(200,168,75,.12);
+}
+.sidebar-brand {
+  padding: 20px 18px 16px;
+  border-bottom: 1px solid rgba(200,168,75,.12);
+}
+.brand-mark {
+  display: flex; align-items: center; gap: 9px;
+}
+.brand-icon {
+  width: 30px; height: 30px; border-radius: 6px;
+  background: linear-gradient(135deg, var(--gold), var(--gold-dk));
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px; font-weight: 700; color: var(--navy);
+}
+.brand-name { font-size: 12px; font-weight: 700; color: #fff; line-height: 1.3; }
+.brand-sub  { font-size: 9px; color: rgba(200,168,75,.6); font-weight: 500; letter-spacing: .5px; text-transform: uppercase; margin-top: 1px; }
+.sidebar-nav { flex: 1; padding: 8px 0; overflow-y: auto; }
+.nav-label {
+  font-size: 8.5px; font-weight: 700; color: rgba(255,255,255,.2);
+  text-transform: uppercase; letter-spacing: 1.2px;
+  padding: 14px 18px 5px;
+}
+.nav-item {
+  display: flex; align-items: center; gap: 9px;
+  padding: 8px 18px; cursor: pointer;
+  color: rgba(255,255,255,.45); font-size: 12px; font-weight: 400;
+  transition: all .15s;
+  border-left: 2px solid transparent;
+  user-select: none;
+}
+.nav-item:hover { background: rgba(200,168,75,.07); color: rgba(255,255,255,.85); }
+.nav-item.active {
+  background: rgba(200,168,75,.11); color: var(--gold-lt);
+  border-left-color: var(--gold); font-weight: 600;
+}
+.nav-icon { font-size: 13px; width: 15px; text-align: center; }
+.sidebar-foot {
+  padding: 12px 18px;
+  border-top: 1px solid rgba(255,255,255,.05);
+  font-size: 9px; color: rgba(255,255,255,.18);
+}
+
+/* ── MAIN SHELL ──────────────────────────── */
+.main { margin-left: 220px; flex: 1; display: flex; flex-direction: column; min-height: 100vh; }
+.topbar {
+  background: var(--card);
+  border-bottom: 1px solid var(--border);
+  padding: 0 24px; height: 52px;
+  display: flex; align-items: center; justify-content: space-between;
+  position: sticky; top: 0; z-index: 50;
+}
+.topbar-title { font-size: 13px; font-weight: 700; color: var(--gray-900); }
+.topbar-right { display: flex; align-items: center; gap: 7px; }
+.autosave {
+  font-size: 10px; color: var(--gray-400);
+  display: flex; align-items: center; gap: 4px;
+}
+.autosave-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--gray-200); flex-shrink: 0;
+}
+
+/* ── KPI STRIP ───────────────────────────── */
+.kpi-strip {
+  background: var(--navy-2);
+  padding: 14px 24px;
+  display: flex; gap: 0;
+  border-bottom: 1px solid rgba(200,168,75,.08);
+}
+.kpi {
+  flex: 1; padding: 0 20px;
+  border-right: 1px solid rgba(255,255,255,.06);
+}
+.kpi:first-child { padding-left: 0; }
+.kpi:last-child  { border-right: none; }
+.kpi-label { font-size: 8.5px; color: rgba(255,255,255,.35); text-transform: uppercase; letter-spacing: .9px; font-weight: 600; margin-bottom: 3px; }
+.kpi-val   { font-size: 21px; font-weight: 700; color: #fff; font-family: 'JetBrains Mono', monospace; line-height: 1.15; }
+.kpi-sub   { font-size: 8.5px; color: rgba(255,255,255,.25); margin-top: 1px; }
+
+/* ── GLOBAL FILTER BAR ───────────────────── */
+.filter-bar {
+  background: var(--card);
+  border-bottom: 1px solid var(--border);
+  padding: 8px 24px;
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  position: sticky; top: 52px; z-index: 45;
+}
+.filter-bar-label { font-size: 9.5px; font-weight: 700; color: var(--gray-400); text-transform: uppercase; letter-spacing: .6px; white-space: nowrap; }
+.filter-sep { width: 1px; height: 18px; background: var(--border); }
+.filter-select, .filter-search {
+  padding: 5px 9px;
+  font-family: 'Sora', sans-serif; font-size: 11px;
+  border: 1px solid var(--border); border-radius: 5px;
+  background: var(--card); color: var(--gray-800); cursor: pointer;
+}
+.filter-search { width: 160px; }
+.filter-search:focus, .filter-select:focus { outline: none; border-color: var(--gold); }
+.filter-count {
+  font-size: 9.5px; font-weight: 700;
+  background: var(--gold); color: var(--navy);
+  padding: 2px 8px; border-radius: 9px;
+}
+.filter-clear {
+  font-size: 10px; font-weight: 600; color: var(--red);
+  background: none; border: none; cursor: pointer; font-family: inherit;
+}
+
+/* ── CONTENT ─────────────────────────────── */
+.content { padding: 22px 24px; flex: 1; }
+.page { display: none; }
+.page.active { display: block; }
+
+/* ── CARDS ───────────────────────────────── */
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: var(--shadow);
+  padding: 16px;
+}
+.card-title {
+  font-size: 10px; font-weight: 700; color: var(--gray-500);
+  text-transform: uppercase; letter-spacing: .5px;
+  margin-bottom: 12px;
+}
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+.grid-4 { display: grid; grid-template-columns: repeat(4,1fr); gap: 10px; }
+
+/* ── BUTTONS ─────────────────────────────── */
+.btn {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 6px 13px;
+  font-family: 'Sora', sans-serif; font-size: 11.5px; font-weight: 600;
+  border: none; cursor: pointer; transition: all .15s;
+  border-radius: 5px; user-select: none;
+}
+.btn-navy   { background: var(--navy); color: #fff; }
+.btn-navy:hover { background: var(--navy-3); }
+.btn-gold   { background: var(--gold); color: var(--navy); font-weight: 700; }
+.btn-gold:hover { background: var(--gold-lt); }
+.btn-ghost  { background: transparent; border: 1px solid var(--border); color: var(--gray-600); }
+.btn-ghost:hover { border-color: var(--gray-400); color: var(--gray-800); }
+.btn-danger { background: transparent; border: 1px solid var(--red); color: var(--red); }
+.btn-danger:hover { background: var(--red-lt); }
+.btn-sm { padding: 4px 9px; font-size: 10.5px; }
+
+/* ── TAGS / BADGES ───────────────────────── */
+.tag {
+  font-size: 8.5px; font-weight: 700;
+  padding: 2px 6px; border-radius: 3px;
+  text-transform: uppercase; letter-spacing: .4px; white-space: nowrap;
+  display: inline-block;
+}
+.tag-red    { background: var(--red-lt); color: var(--red); }
+.tag-amber  { background: var(--amber-lt); color: var(--amber); }
+.tag-green  { background: var(--green-lt); color: var(--green); }
+.tag-teal   { background: #CCFBF1; color: var(--teal); }
+.tag-navy   { background: var(--blue-lt); color: #1E40AF; }
+.tag-purple { background: #EDE9FE; color: var(--purple); }
+.tag-gray   { background: var(--gray-100); color: var(--gray-600); }
+.tag-gold   { background: var(--amber-lt); color: #92400E; }
+.risk-badge {
+  display: inline-block;
+  padding: 2px 7px; border-radius: 4px;
+  font-size: 8.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px;
+}
+.risk-low    { background: var(--green-lt); color: var(--green); }
+.risk-medium { background: var(--amber-lt); color: var(--amber); }
+.risk-high   { background: var(--red-lt); color: var(--red); }
+
+/* ── OVERVIEW PAGE ───────────────────────── */
+.overview-hero {
+  background: linear-gradient(135deg, var(--navy-2) 0%, var(--navy-3) 100%);
+  border-radius: 10px; padding: 22px 24px; margin-bottom: 16px;
+  border: 1px solid rgba(200,168,75,.15);
+  display: flex; align-items: center; justify-content: space-between; gap: 20px;
+}
+.overview-hero-text h2 {
+  font-size: 18px; font-weight: 700; color: #fff; margin-bottom: 5px;
+}
+.overview-hero-text p { font-size: 12px; color: rgba(255,255,255,.5); line-height: 1.6; max-width: 480px; }
+.hero-stats {
+  display: flex; gap: 20px; flex-shrink: 0;
+}
+.hero-stat {
+  text-align: center;
+  background: rgba(255,255,255,.06);
+  border: 1px solid rgba(200,168,75,.15);
+  border-radius: 8px; padding: 12px 18px;
+}
+.hero-stat-val { font-size: 28px; font-weight: 700; color: var(--gold-lt); font-family: 'JetBrains Mono', monospace; line-height: 1; }
+.hero-stat-label { font-size: 9px; color: rgba(255,255,255,.35); text-transform: uppercase; letter-spacing: .7px; margin-top: 4px; }
+
+/* Risk summary cards */
+.risk-summary-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; margin-bottom: 16px; }
+.risk-summary-card {
+  background: var(--card); border-radius: 8px;
+  border: 1px solid var(--border); box-shadow: var(--shadow);
+  padding: 16px 18px;
+  display: flex; align-items: center; gap: 14px;
+}
+.risk-icon {
+  width: 42px; height: 42px; border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px; flex-shrink: 0;
+}
+.risk-icon-high   { background: var(--red-lt); }
+.risk-icon-medium { background: var(--amber-lt); }
+.risk-icon-low    { background: var(--green-lt); }
+.risk-summary-val { font-size: 28px; font-weight: 700; font-family: 'JetBrains Mono', monospace; line-height: 1.1; }
+.risk-summary-val.high   { color: var(--red); }
+.risk-summary-val.medium { color: var(--amber); }
+.risk-summary-val.low    { color: var(--green); }
+.risk-summary-label { font-size: 11px; font-weight: 600; color: var(--gray-700); }
+.risk-summary-sub   { font-size: 9.5px; color: var(--gray-400); margin-top: 1px; }
+
+/* Top changes list */
+.top-change-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 0; border-bottom: 1px solid var(--gray-100);
+}
+.top-change-row:last-child { border-bottom: none; }
+.top-change-rank {
+  font-size: 14px; font-weight: 700; color: var(--gray-200);
+  min-width: 18px; font-family: 'JetBrains Mono', monospace;
+}
+.top-change-info { flex: 1; min-width: 0; }
+.top-change-title { font-size: 11.5px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.top-change-meta  { font-size: 9px; color: var(--gray-400); margin-top: 1px; }
+.top-change-score {
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 700; font-size: 13px; color: var(--gray-700);
+}
+
+/* Insight items */
+.insight-list { display: flex; flex-direction: column; gap: 8px; }
+.insight-item {
+  display: flex; align-items: flex-start; gap: 9px;
+  padding: 9px 11px; border-radius: 6px;
+  border: 1px solid var(--border); background: var(--gray-50);
+}
+.insight-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; margin-top: 5px; }
+.i-red    { background: var(--red); }
+.i-amber  { background: var(--amber); }
+.i-green  { background: var(--green); }
+.insight-text { font-size: 11.5px; color: var(--gray-700); line-height: 1.55; }
+
+/* Persona cards */
+.persona-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 10px; margin-bottom: 14px; }
+.persona-card {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 8px; padding: 13px; text-align: center;
+}
+.persona-icon  { font-size: 24px; margin-bottom: 5px; }
+.persona-name  { font-size: 9.5px; font-weight: 700; color: var(--gray-700); margin-bottom: 5px; line-height: 1.3; }
+.persona-bar-bg{ background: var(--gray-100); border-radius: 4px; height: 4px; margin-bottom: 5px; }
+.persona-bar   { height: 4px; border-radius: 4px; transition: width .5s; }
+.pbar-low    { background: var(--green); }
+.pbar-medium { background: var(--amber); }
+.pbar-high   { background: var(--red); }
+.persona-score { font-size: 18px; font-weight: 700; font-family: 'JetBrains Mono', monospace; color: var(--gray-900); }
+.persona-count { font-size: 9px; color: var(--gray-400); }
+
+/* ── CHANGE REGISTER TABLE ───────────────── */
+.register-toolbar {
+  display: flex; align-items: center; gap: 8px;
+  margin-bottom: 12px; flex-wrap: wrap;
+}
+.table-wrap { overflow-x: auto; border-radius: 8px; border: 1px solid var(--border); }
+.data-table  { width: 100%; border-collapse: collapse; font-size: 11.5px; }
+.data-table thead th {
+  background: var(--gray-50); color: var(--gray-500);
+  font-weight: 700; text-transform: uppercase; font-size: 8.5px; letter-spacing: .7px;
+  padding: 9px 11px; text-align: left;
+  border-bottom: 1px solid var(--border); white-space: nowrap;
+  position: sticky; top: 0;
+}
+.data-table tbody tr { border-bottom: 1px solid var(--gray-100); transition: background .1s; }
+.data-table tbody tr:hover { background: var(--gold-bg); }
+.data-table tbody td { padding: 8px 11px; vertical-align: middle; }
+/* expand row */
+.expand-row { display: none; }
+.expand-row.open { display: table-row; }
+.expand-cell {
+  padding: 0 !important;
+}
+.expand-inner {
+  padding: 14px 18px; background: var(--gray-50);
+  border-top: 1px solid var(--border);
+}
+.score-pill {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 22px; height: 22px; border-radius: 50%;
+  font-size: 10px; font-weight: 700; font-family: 'JetBrains Mono', monospace;
+}
+.sp1{background:var(--green-lt);color:#166534;}
+.sp2{background:#DBEAFE;color:#1E40AF;}
+.sp3{background:var(--amber-lt);color:#92400E;}
+.sp4{background:#FED7AA;color:#9A3412;}
+.sp5{background:var(--red-lt);color:var(--red);}
+.tower-pill {
+  font-size: 9.5px; font-weight: 700;
+  padding: 2px 8px; border-radius: 4px;
+  font-family: 'JetBrains Mono', monospace;
+}
+.t-PTP  { background: #F3E8FF; color: #6B21A8; }
+.t-OTC  { background: var(--blue-lt); color: #1E40AF; }
+.t-RTR  { background: #CCFBF1; color: #0F766E; }
+.t-FPA  { background: var(--amber-lt); color: #92400E; }
+.impact-bar-wrap { display: flex; align-items: center; gap: 6px; }
+.impact-bar-bg   { flex: 1; background: var(--gray-100); border-radius: 3px; height: 6px; min-width: 50px; }
+.impact-bar-fill { height: 6px; border-radius: 3px; }
+.impact-val      { font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 11px; min-width: 24px; }
+.expand-btn {
+  background: none; border: none; cursor: pointer;
+  color: var(--gray-400); font-size: 12px; padding: 2px 4px;
+  transition: color .15s; border-radius: 3px;
+}
+.expand-btn:hover { color: var(--gold); background: var(--gold-bg); }
+
+/* ── DIMENSION DETAIL IN EXPAND ROW ─────── */
+.dim-detail-grid {
+  display: grid; grid-template-columns: repeat(3,1fr); gap: 10px;
+  margin-bottom: 12px;
+}
+.dim-detail-card {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 6px; padding: 10px 12px;
+}
+.dim-detail-name  { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--gray-500); margin-bottom: 4px; }
+.dim-detail-score {
+  font-size: 22px; font-weight: 700;
+  font-family: 'JetBrains Mono', monospace; line-height: 1;
+  margin-bottom: 4px;
+}
+.dim-detail-desc  { font-size: 10px; color: var(--gray-500); line-height: 1.5; font-style: italic; }
+
+/* ── HEATMAP PAGE ────────────────────────── */
+.hbar-row {
+  display: flex; align-items: center; gap: 9px;
+  padding: 6px 0; border-bottom: 1px solid var(--gray-100);
+}
+.hbar-row:last-child { border-bottom: none; }
+.hbar-label { font-size: 10.5px; font-weight: 500; color: var(--gray-700); min-width: 200px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hbar-bg    { flex: 1; background: var(--gray-100); border-radius: 3px; height: 7px; }
+.hbar-fill  { height: 7px; border-radius: 3px; transition: width .5s; }
+.hbar-score { font-size: 10px; font-weight: 700; font-family: 'JetBrains Mono', monospace; color: var(--gray-500); min-width: 26px; text-align: right; }
+
+/* ── STRATEGY PAGE ───────────────────────── */
+.strategy-banner {
+  background: linear-gradient(135deg, #EFF6FF, #DBEAFE);
+  border: 1px solid #BFDBFE; border-radius: 8px;
+  padding: 14px 16px; margin-bottom: 16px;
+}
+.int-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; }
+.int-card  {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 8px; padding: 13px;
+}
+.int-persona  { font-size: 9px; font-weight: 700; text-transform: uppercase; color: var(--gray-400); margin-bottom: 4px; }
+.int-risk-lv  { font-size: 12px; font-weight: 700; margin-bottom: 8px; }
+.int-actions  { display: flex; flex-direction: column; gap: 4px; }
+.int-action   { font-size: 10.5px; color: var(--gray-600); display: flex; align-items: flex-start; gap: 5px; }
+.int-dot      { width: 4px; height: 4px; border-radius: 50%; background: var(--gold); margin-top: 5px; flex-shrink: 0; }
+
+/* ── TRAINING PAGE ───────────────────────── */
+.training-block { margin-bottom: 14px; border-radius: 7px; overflow: hidden; border: 1px solid var(--border); }
+.training-header {
+  font-size: 11px; font-weight: 700; color: var(--gray-800);
+  padding: 9px 13px; background: var(--gray-50);
+  display: flex; align-items: center; gap: 7px; flex-wrap: wrap;
+}
+.training-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+.training-table th {
+  background: var(--gray-50); font-size: 8.5px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: .6px; color: var(--gray-500);
+  padding: 7px 12px; border-bottom: 1px solid var(--border);
+  border-top: 1px solid var(--border);
+}
+.training-table td { padding: 7px 12px; border-bottom: 1px solid var(--gray-100); vertical-align: middle; }
+.training-table tr:hover td { background: var(--gold-bg); }
+.training-foot {
+  background: var(--gray-50); padding: 7px 13px;
+  border-top: 1px solid var(--border);
+  font-size: 10px; color: var(--gray-500);
+}
+
+/* ── DRAWER ──────────────────────────────── */
+.drawer-overlay {
+  position: fixed; inset: 0;
+  background: rgba(11,22,41,.45);
+  z-index: 200; opacity: 0; pointer-events: none;
+  transition: opacity .2s;
+}
+.drawer-overlay.open { opacity: 1; pointer-events: all; }
+.drawer {
+  position: fixed; top: 0; right: -600px; bottom: 0;
+  width: 560px; background: var(--card);
+  box-shadow: var(--shadow-lg); z-index: 201;
+  display: flex; flex-direction: column;
+  transition: right .25s cubic-bezier(.25,.46,.45,.94);
+}
+.drawer.open { right: 0; }
+.drawer-header {
+  padding: 16px 20px 14px;
+  border-bottom: 1px solid var(--border);
+  background: var(--gray-50);
+  display: flex; align-items: center; justify-content: space-between;
+  flex-shrink: 0;
+}
+.drawer-title { font-size: 13px; font-weight: 700; color: var(--gray-900); }
+.drawer-close {
+  background: none; border: none; cursor: pointer;
+  color: var(--gray-400); font-size: 18px; line-height: 1;
+  transition: color .15s; padding: 2px 5px;
+}
+.drawer-close:hover { color: var(--gray-800); }
+.drawer-body {
+  flex: 1; overflow-y: auto; padding: 18px 20px;
+}
+.drawer-footer {
+  padding: 12px 20px;
+  border-top: 1px solid var(--border);
+  background: var(--gray-50);
+  display: flex; gap: 8px; justify-content: flex-end;
+  flex-shrink: 0;
+}
+
+/* ── FORM ────────────────────────────────── */
+.form-group { margin-bottom: 13px; }
+.form-label {
+  display: block; font-size: 9.5px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: .5px;
+  color: var(--gray-600); margin-bottom: 5px;
+}
+.form-input, .form-select, .form-textarea {
+  width: 100%; padding: 7px 10px;
+  font-family: 'Sora', sans-serif; font-size: 12px;
+  border: 1px solid var(--gray-200); border-radius: 5px;
+  background: var(--card); color: var(--gray-900);
+  transition: border-color .15s;
+}
+.form-input:focus, .form-select:focus, .form-textarea:focus {
+  outline: none; border-color: var(--gold);
+  box-shadow: 0 0 0 3px rgba(200,168,75,.1);
+}
+.form-textarea { resize: vertical; min-height: 58px; }
+.form-divider {
+  font-size: 9.5px; font-weight: 700; color: var(--gray-500);
+  text-transform: uppercase; letter-spacing: .6px;
+  margin: 16px 0 10px;
+  padding-bottom: 6px; border-bottom: 1px solid var(--border);
+}
+
+/* ── DIMENSION SLIDERS (new style) ───────── */
+.dim-slider-section { display: flex; flex-direction: column; gap: 12px; }
+.dim-slider-card {
+  background: var(--gray-50);
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  padding: 14px 16px;
+  transition: border-color .2s;
+}
+.dim-slider-card:focus-within {
+  border-color: var(--gold);
+  background: var(--gold-bg);
+}
+.dim-slider-top {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 10px;
+}
+.dim-slider-left { display: flex; align-items: center; gap: 8px; }
+.dim-slider-icon { font-size: 16px; }
+.dim-slider-name { font-size: 11.5px; font-weight: 700; color: var(--gray-800); }
+.dim-score-badge {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 20px; font-weight: 700;
+  min-width: 32px; text-align: right;
+  transition: color .2s;
+}
+.score-c-1 { color: var(--green); }
+.score-c-2 { color: #2563EB; }
+.score-c-3 { color: var(--amber); }
+.score-c-4 { color: #EA580C; }
+.score-c-5 { color: var(--red); }
+
+/* Custom styled range slider */
+.dim-range {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 6px;
+  border-radius: 3px;
+  outline: none;
+  cursor: pointer;
+  margin-bottom: 8px;
+  background: linear-gradient(to right, var(--track-fill, var(--green)) 0%, var(--track-fill, var(--green)) var(--track-pct, 0%), var(--gray-200) var(--track-pct, 0%), var(--gray-200) 100%);
+}
+.dim-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px; height: 20px;
+  border-radius: 50%;
+  background: var(--card);
+  border: 2.5px solid var(--thumb-color, var(--gold));
+  box-shadow: 0 1px 4px rgba(11,22,41,.2);
+  cursor: pointer;
+  transition: transform .1s, box-shadow .1s;
+}
+.dim-range::-webkit-slider-thumb:hover {
+  transform: scale(1.15);
+  box-shadow: 0 2px 8px rgba(11,22,41,.25);
+}
+.dim-range::-moz-range-thumb {
+  width: 20px; height: 20px;
+  border-radius: 50%;
+  background: var(--card);
+  border: 2.5px solid var(--thumb-color, var(--gold));
+  cursor: pointer;
+}
+.dim-descriptor {
+  font-size: 10.5px; color: var(--gray-600);
+  font-style: italic; line-height: 1.5;
+  background: rgba(255,255,255,.7);
+  border-left: 3px solid var(--gold);
+  padding: 6px 10px; border-radius: 0 4px 4px 0;
+  min-height: 36px;
+  transition: opacity .15s;
+}
+.dim-scale-labels {
+  display: flex; justify-content: space-between;
+  font-size: 8.5px; color: var(--gray-400);
+  font-family: 'JetBrains Mono', monospace;
+  margin-bottom: 6px;
+}
+
+/* ── WEIGHTS PANEL ───────────────────────── */
+.weights-toggle {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 10px; font-weight: 600; color: var(--gray-500);
+  background: var(--gray-50); border: 1px solid var(--border);
+  border-radius: 5px; padding: 5px 10px; cursor: pointer;
+  transition: all .15s; margin-bottom: 12px;
+}
+.weights-toggle:hover { border-color: var(--gold); color: var(--gold-dk); }
+.weights-panel {
+  display: none;
+  background: linear-gradient(135deg, var(--gold-bg), #FEF9E8);
+  border: 1px solid rgba(200,168,75,.25); border-radius: 8px;
+  padding: 14px; margin-bottom: 14px;
+}
+.weights-panel.open { display: block; }
+.weights-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; }
+.weight-item { display: flex; flex-direction: column; gap: 3px; }
+.weight-label { font-size: 10px; font-weight: 500; color: var(--gray-600); display: flex; justify-content: space-between; }
+.weight-pct   { font-family: 'JetBrains Mono', monospace; font-weight: 700; color: var(--gold-dk); }
+.weight-slider { accent-color: var(--gold); width: 100%; }
+.weight-total  { margin-top: 8px; font-size: 11px; font-weight: 700; }
+.weight-ok   { color: var(--green); }
+.weight-over { color: var(--red); }
+
+/* ── TOOLTIP ─────────────────────────────── */
+.tip-wrap { position: relative; display: inline-block; }
+.tip-wrap .tip-box {
+  visibility: hidden; opacity: 0;
+  position: absolute; z-index: 300;
+  bottom: calc(100% + 6px); left: 50%; transform: translateX(-50%);
+  background: var(--gray-900); color: #fff;
+  font-size: 9.5px; line-height: 1.5;
+  padding: 7px 10px; border-radius: 5px;
+  width: 200px; pointer-events: none;
+  transition: opacity .15s; white-space: normal;
+}
+.tip-wrap:hover .tip-box { visibility: visible; opacity: 1; }
+.tip-icon { cursor: help; color: var(--gray-400); font-size: 10px; margin-left: 2px; }
+
+/* ── MISC ────────────────────────────────── */
+.hidden { display: none !important; }
+.section-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 14px;
+}
+.section-title {
+  font-size: 10px; font-weight: 700; color: var(--gray-500);
+  text-transform: uppercase; letter-spacing: .8px;
+}
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--gray-200); border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="sidebar-brand">
+    <div class="brand-mark">
+      <div class="brand-icon">F∆</div>
+      <div>
+        <div class="brand-name">Finance Change</div>
+        <div class="brand-sub">SAP S/4HANA · v4</div>
+      </div>
+    </div>
+  </div>
+  <nav class="sidebar-nav">
+    <div class="nav-label">Assess</div>
+    <div class="nav-item active" onclick="navigate('overview')" id="nav-overview">
+      <span class="nav-icon">📊</span> Overview
+    </div>
+    <div class="nav-item" onclick="navigate('register')" id="nav-register">
+      <span class="nav-icon">📋</span> Change Register
+    </div>
+    <div class="nav-label">Visualise</div>
+    <div class="nav-item" onclick="navigate('heatmap')" id="nav-heatmap">
+      <span class="nav-icon">🗺</span> Heatmap
+    </div>
+    <div class="nav-label">Act</div>
+    <div class="nav-item" onclick="navigate('strategy')" id="nav-strategy">
+      <span class="nav-icon">🧭</span> Strategy
+    </div>
+    <div class="nav-item" onclick="navigate('training')" id="nav-training">
+      <span class="nav-icon">🎓</span> Training Plan
+    </div>
+  </nav>
+  <div class="sidebar-foot">Finance OCM Suite · 58 Scenarios</div>
+</aside>
+
+<!-- MAIN -->
+<div class="main">
+
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <div class="topbar-title" id="page-heading">Overview</div>
+    <div class="topbar-right">
+      <span class="autosave">
+        <span class="autosave-dot" id="autosave-dot"></span>
+        <span id="autosave-text">No saved data</span>
+      </span>
+      <button class="btn btn-ghost btn-sm" onclick="exportTSV()">⬇ Export</button>
+      <button class="btn btn-ghost btn-sm" onclick="saveSession()">💾 Backup</button>
+      <button class="btn btn-ghost btn-sm" onclick="loadSessionBtn()">📂 Restore</button>
+      <button class="btn btn-ghost btn-sm" onclick="saveToCloudant()">☁ Save to IBM</button>
+      <button class="btn btn-ghost btn-sm" onclick="loadFromCloudant()">☁ Load from IBM</button>
+      <button class="btn btn-danger btn-sm" onclick="clearStorage()">↺ Reset</button>
+      <input type="file" id="loadFile" accept=".json" style="display:none" onchange="loadSession(event)">
+    </div>
+  </div>
+
+  <!-- GLOBAL FILTER BAR -->
+  <div class="filter-bar">
+    <span class="filter-bar-label">Filter</span>
+    <div class="filter-sep"></div>
+    <input class="filter-search" id="gf-search" placeholder="Search changes…" oninput="applyGlobalFilters()">
+    <select class="filter-select" id="gf-tower" onchange="applyGlobalFilters()">
+      <option value="">All Towers</option>
+      <option>PTP</option><option>OTC</option><option>RTR</option><option>FP&A</option>
+    </select>
+    <select class="filter-select" id="gf-risk" onchange="applyGlobalFilters()">
+      <option value="">All Risk</option>
+      <option>Low</option><option>Medium</option><option>High</option>
+    </select>
+    <select class="filter-select" id="gf-status" onchange="applyGlobalFilters()">
+      <option value="">All Statuses</option>
+      <option>Active</option><option>On Hold</option><option>Completed</option>
+    </select>
+    <div class="filter-sep"></div>
+    <span class="filter-count" id="gf-count">58</span>
+    <button class="filter-clear" onclick="clearGlobalFilters()">✕ Clear</button>
+  </div>
+
+  <!-- KPI STRIP -->
+  <div class="kpi-strip">
+    <div class="kpi">
+      <div class="kpi-label">Total Changes</div>
+      <div class="kpi-val" id="kpi-total">0</div>
+      <div class="kpi-sub">In assessment</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">High Risk</div>
+      <div class="kpi-val" id="kpi-high">0</div>
+      <div class="kpi-sub">Priority OCM required</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Avg Impact</div>
+      <div class="kpi-val" id="kpi-avg">—</div>
+      <div class="kpi-sub">Weighted score /5</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Highest Risk Persona</div>
+      <div class="kpi-val" id="kpi-persona" style="font-size:12px;padding-top:4px;">—</div>
+      <div class="kpi-sub">Needs most focus</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Avg Control Sensitivity</div>
+      <div class="kpi-val" id="kpi-control">—</div>
+      <div class="kpi-sub">SOX / audit exposure</div>
+    </div>
+  </div>
+
+  <!-- CONTENT AREA -->
+  <div class="content">
+
+    <!-- ── OVERVIEW ─────────────────────── -->
+    <div id="page-overview" class="page active">
+
+      <div class="overview-hero">
+        <div class="overview-hero-text">
+          <h2>Finance Transformation Impact Assessment</h2>
+          <p>SAP S/4HANA change landscape across PTP · OTC · RTR · FP&amp;A — executive summary of risk exposure, persona impact, and OCM priorities.</p>
+        </div>
+        <div class="hero-stats">
+          <div class="hero-stat">
+            <div class="hero-stat-val" id="hero-total">58</div>
+            <div class="hero-stat-label">Changes</div>
+          </div>
+          <div class="hero-stat">
+            <div class="hero-stat-val" id="hero-high" style="color:#F87171;">—</div>
+            <div class="hero-stat-label">High Risk</div>
+          </div>
+          <div class="hero-stat">
+            <div class="hero-stat-val" id="hero-avg" style="color:var(--gold-lt);">—</div>
+            <div class="hero-stat-label">Avg Impact</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Risk summary -->
+      <div class="risk-summary-grid">
+        <div class="risk-summary-card">
+          <div class="risk-icon risk-icon-high">🔴</div>
+          <div>
+            <div class="risk-summary-val high" id="ov-high">—</div>
+            <div class="risk-summary-label">High Risk Changes</div>
+            <div class="risk-summary-sub">Require priority OCM investment</div>
+          </div>
+        </div>
+        <div class="risk-summary-card">
+          <div class="risk-icon risk-icon-medium">🟡</div>
+          <div>
+            <div class="risk-summary-val medium" id="ov-medium">—</div>
+            <div class="risk-summary-label">Medium Risk Changes</div>
+            <div class="risk-summary-sub">Targeted support needed</div>
+          </div>
+        </div>
+        <div class="risk-summary-card">
+          <div class="risk-icon risk-icon-low">🟢</div>
+          <div>
+            <div class="risk-summary-val low" id="ov-low">—</div>
+            <div class="risk-summary-label">Low Risk Changes</div>
+            <div class="risk-summary-sub">Standard comms &amp; training</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid-2" style="margin-bottom:14px;">
+        <div class="card">
+          <div class="card-title">Impact by Tower</div>
+          <canvas id="chart-ov-tower" height="180"></canvas>
+        </div>
+        <div class="card">
+          <div class="card-title">Risk Distribution</div>
+          <canvas id="chart-ov-risk" height="180"></canvas>
+        </div>
+      </div>
+
+      <div class="grid-2" style="margin-bottom:14px;">
+        <div class="card">
+          <div class="card-title">Top 10 Highest Impact Changes</div>
+          <div id="ov-top10"></div>
+        </div>
+        <div class="card">
+          <div class="card-title">Persona Exposure — Top 8</div>
+          <div class="persona-grid" id="ov-personas" style="grid-template-columns:repeat(4,1fr);margin:0;"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Strategic Recommendations</div>
+        <div class="insight-list" id="ov-insights"></div>
+      </div>
+    </div>
+
+    <!-- ── CHANGE REGISTER ───────────────── -->
+    <div id="page-register" class="page">
+      <div class="section-header">
+        <div class="section-title">Change Register — <span id="reg-count">0</span> changes</div>
+        <button class="btn btn-gold btn-sm" onclick="openDrawer(null)">＋ Add Change</button>
+      </div>
+
+      <!-- Weights toggle -->
+      <button class="weights-toggle" onclick="toggleWeights()">
+        ⚙️ Customise dimension weights <span id="weights-toggle-arrow">▼</span>
+      </button>
+      <div class="weights-panel" id="weights-panel">
+        <div class="weights-grid">
+          <div class="weight-item">
+            <div class="weight-label">Process Impact <span class="weight-pct" id="wp-pi">25%</span></div>
+            <input type="range" class="weight-slider" id="w-pi" min="5" max="50" value="25" oninput="updateWeights()">
+          </div>
+          <div class="weight-item">
+            <div class="weight-label">Technology Impact <span class="weight-pct" id="wp-ti">20%</span></div>
+            <input type="range" class="weight-slider" id="w-ti" min="5" max="50" value="20" oninput="updateWeights()">
+          </div>
+          <div class="weight-item">
+            <div class="weight-label">People / Role Impact <span class="weight-pct" id="wp-pe">20%</span></div>
+            <input type="range" class="weight-slider" id="w-pe" min="5" max="50" value="20" oninput="updateWeights()">
+          </div>
+          <div class="weight-item">
+            <div class="weight-label">Skill Impact <span class="weight-pct" id="wp-si">15%</span></div>
+            <input type="range" class="weight-slider" id="w-si" min="5" max="50" value="15" oninput="updateWeights()">
+          </div>
+          <div class="weight-item">
+            <div class="weight-label">Behavior / Adoption <span class="weight-pct" id="wp-bi">15%</span></div>
+            <input type="range" class="weight-slider" id="w-bi" min="5" max="50" value="15" oninput="updateWeights()">
+          </div>
+          <div class="weight-item">
+            <div class="weight-label">Risk if Not Managed <span class="weight-pct" id="wp-ri">5%</span></div>
+            <input type="range" class="weight-slider" id="w-ri" min="5" max="50" value="5" oninput="updateWeights()">
+          </div>
+        </div>
+        <div class="weight-total" id="weights-total">Total: 100% ✓</div>
+      </div>
+
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th style="width:32px;"></th>
+              <th>Tower</th>
+              <th>Change</th>
+              <th>Primary Persona</th>
+              <th>Population</th>
+              <th>Impact</th>
+              <th>Risk</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="register-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ── HEATMAP ────────────────────────── -->
+    <div id="page-heatmap" class="page">
+      <div class="grid-2" style="margin-bottom:14px;">
+        <div class="card">
+          <div class="card-title">Avg Impact by Tower</div>
+          <canvas id="chart-hm-tower" height="200"></canvas>
+        </div>
+        <div class="card">
+          <div class="card-title">Avg Dimensions by Tower</div>
+          <canvas id="chart-hm-dims" height="200"></canvas>
+        </div>
+      </div>
+      <div class="grid-2" style="margin-bottom:14px;">
+        <div class="card">
+          <div class="card-title">Control Sensitivity by Tower</div>
+          <canvas id="chart-hm-ctrl" height="200"></canvas>
+        </div>
+        <div class="card">
+          <div class="card-title">Persona Impact Radar (Top 4)</div>
+          <canvas id="chart-hm-radar" height="200"></canvas>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title" style="margin-bottom:8px;">All Changes — Ranked by Impact</div>
+        <div id="hm-bars"></div>
+      </div>
+    </div>
+
+    <!-- ── STRATEGY ───────────────────────── -->
+    <div id="page-strategy" class="page">
+      <div class="strategy-banner" id="strategy-banner"></div>
+      <div class="int-grid" id="int-grid"></div>
+    </div>
+
+    <!-- ── TRAINING ───────────────────────── -->
+    <div id="page-training" class="page">
+      <div class="section-title" style="margin-bottom:14px;">Role-Based Training Recommendations</div>
+      <div id="training-content"></div>
+    </div>
+
+  </div><!-- /content -->
+</div><!-- /main -->
+
+<!-- EDIT / ADD DRAWER -->
+<div class="drawer-overlay" id="drawer-overlay" onclick="closeDrawer()"></div>
+<div class="drawer" id="drawer">
+  <div class="drawer-header">
+    <div class="drawer-title" id="drawer-title">Edit Change</div>
+    <button class="drawer-close" onclick="closeDrawer()">✕</button>
+  </div>
+  <div class="drawer-body">
+    <div class="grid-2">
+      <div class="form-group">
+        <label class="form-label">Finance Tower</label>
+        <select class="form-select" id="f-tower">
+          <option>PTP</option><option>OTC</option><option>RTR</option><option>FP&A</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Change Type</label>
+        <input class="form-input" id="f-type" placeholder="e.g. Process + AI + Platform">
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Change Title</label>
+      <input class="form-input" id="f-title" placeholder="Brief descriptive title">
+    </div>
+    <div class="grid-2">
+      <div class="form-group">
+        <label class="form-label">As-Is (Current State)</label>
+        <textarea class="form-textarea" id="f-asis" placeholder="How it works today…"></textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label">To-Be (Future State)</label>
+        <textarea class="form-textarea" id="f-tobe" placeholder="How it will work in S/4HANA…"></textarea>
+      </div>
+    </div>
+    <div class="grid-2">
+      <div class="form-group">
+        <label class="form-label">Primary Persona</label>
+        <input class="form-input" id="f-primary" placeholder="e.g. AP Processor">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Secondary Personas</label>
+        <input class="form-input" id="f-secondary" placeholder="e.g. AP Lead; Controller">
+      </div>
+    </div>
+    <div class="grid-2">
+      <div class="form-group">
+        <label class="form-label">Status</label>
+        <select class="form-select" id="f-status">
+          <option>Active</option><option>On Hold</option><option>Completed</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Population</label>
+        <select class="form-select" id="f-pop">
+          <option>Large</option><option>Medium</option><option>Small</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="form-divider">Impact Dimension Scores</div>
+    <div class="dim-slider-section" id="dim-sliders"></div>
+
+    <div class="form-divider" style="margin-top:16px;">Additional Attributes</div>
+    <div class="grid-2">
+      <div class="form-group">
+        <label class="form-label">Change Readiness (1–5)</label>
+        <select class="form-select" id="f-readiness">
+          <option value="1">1 – Very Low</option><option value="2">2 – Low</option>
+          <option value="3" selected>3 – Moderate</option><option value="4">4 – Good</option><option value="5">5 – Strong</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Control Sensitivity (1–5)</label>
+        <select class="form-select" id="f-control">
+          <option value="1">1</option><option value="2">2</option>
+          <option value="3" selected>3</option><option value="4">4</option><option value="5">5</option>
+        </select>
+      </div>
+    </div>
+    <div class="grid-2">
+      <div class="form-group">
+        <label class="form-label">Suggested Interventions</label>
+        <textarea class="form-textarea" id="f-interventions" placeholder="e.g. Role-based training; SOP update; hypercare"></textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Notes / Risks</label>
+        <textarea class="form-textarea" id="f-notes" placeholder="Dependencies, risks, go-live date…"></textarea>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Owner</label>
+      <input class="form-input" id="f-owner" placeholder="Change owner name or role">
+    </div>
+  </div>
+  <div class="drawer-footer">
+    <button class="btn btn-ghost" onclick="closeDrawer()">Cancel</button>
+    <button class="btn btn-gold" onclick="saveRow()">Save Change</button>
+  </div>
+</div>
+
+<script>
+/* Cloudant Configuration */
+const CLOUDANT_HOST    = "https://405dcce6-ff83-44d2-8200-bb4feddaeb1c-bluemix.cloudantnosqldb.appdomain.cloud";
+const CLOUDANT_DB      = "finance-change";
+// IMPORTANT: masked key only — do not expand it
+const CLOUDANT_API_KEY = "gfaPXXXXXXXXXXXXXXXXXXXXXXXXXX-FMl_h";
+
+// ================================================================
+// DESCRIPTORS
+// ================================================================
+const DESCS = {
+  pi: [
+    'Very limited process change; <10% of activities change; mostly cosmetic',
+    'Small process change; 10–25% of activities change; existing logic largely intact',
+    'Moderate process change; 25–50% of activities change; some steps added, removed, or reordered',
+    'High process change; 50–75% of activities change; team shifts to exception-based or insight-led work',
+    'Very high redesign; >75% of process flow changes; operating model, controls, handoffs materially redesigned'
+  ],
+  ti: [
+    'Minor UI/config change within existing platform; little retraining required',
+    'Limited feature enhancement or workflow update; some familiarization needed',
+    'Moderate system change: new workflows, integrations, dashboards, or data structures',
+    'Major platform enhancement or introduction of AI/automation features changing how users transact',
+    'Significant platform transformation: new planning/transaction paradigm, AI decision support, or major system shift'
+  ],
+  pe: [
+    'Little or no role change; same accountability and work pattern remain',
+    'Minor changes in task mix; limited shift in ownership or decision rights',
+    'Noticeable role evolution; some responsibilities move, new collaboration points emerge',
+    'Significant role redesign; work shifts from manual execution to exception handling, analysis, or oversight',
+    'Fundamental workforce impact; role purpose, span, accountability, and performance expectations materially change'
+  ],
+  si: [
+    'Existing skills sufficient; little or no new learning needed',
+    'Basic training needed on workflow or system updates',
+    'New working knowledge needed in analytics, controls, process interpretation, or system usage',
+    'Strong upskilling needed in data interpretation, automation handling, AI-assisted decision making, or business partnering',
+    'Major reskilling required; success depends on building substantially new digital, analytical, or strategic capabilities'
+  ],
+  bi: [
+    'Minimal behavior change; users continue working in largely the same way',
+    'Limited adoption shift; some habits or approvals need adjustment',
+    'Moderate change in team habits, coordination, or decision-making behavior',
+    'High adoption shift; users must trust system recommendations and change established routines',
+    'Major mindset shift; organization must move from manual/control comfort to digital, predictive, insight-led ways of working'
+  ],
+  ri: [
+    'Low risk; limited disruption if adoption is slow',
+    'Some productivity or user experience issues may occur, but impact is contained',
+    'Moderate risk of delays, workarounds, inconsistent usage, or quality issues',
+    'High risk of control breakdown, low adoption, process failure, or business dissatisfaction',
+    'Very high risk; unmanaged change could materially affect close, compliance, collections, payments, or forecast quality'
+  ]
+};
+
+const DIM_CONFIG = [
+  { key:'pi', icon:'⚙️',  label:'Process Impact',        short:'PI' },
+  { key:'ti', icon:'💻',  label:'Technology Impact',     short:'TI' },
+  { key:'pe', icon:'👥',  label:'People / Role Impact',  short:'PE' },
+  { key:'si', icon:'📚',  label:'Skill Impact',          short:'SK' },
+  { key:'bi', icon:'🧠',  label:'Behavior / Adoption',   short:'BA' },
+  { key:'ri', icon:'⚠️',  label:'Risk if Not Managed',   short:'RK' },
+];
+
+const TOWERS = [
+  { id:'PTP', name:'Procure to Pay',   icon:'🛒', color:'#9333EA' },
+  { id:'OTC', name:'Order to Cash',    icon:'💵', color:'#2563EB' },
+  { id:'RTR', name:'Record to Report', icon:'📒', color:'#0D9488' },
+  { id:'FPA', name:'FP&A',             icon:'📈', color:'#D97706' },
+];
+
+// ================================================================
+// SEED DATA
+// ================================================================
+const SEED_DATA = [
+  {tower:'PTP',type:'Process + AI + Platform',title:'AI-assisted invoice capture and coding',asis:'AP manually keys invoice data and assigns coding based on experience',tobe:'AI extracts invoice data, recommends coding, and routes only exceptions',primary:'AP Processor',secondary:'AP Lead; Business Approver; Procurement Ops; Controls',population:'Large',pi:5,ti:4,pe:4,si:4,bi:4,ri:4,readiness:3,training:4,comm:4,control:4,resistance:4,interventions:'Role-based training; SOP update; hypercare; control validation',notes:'',status:'Active',owner:'AP Lead'},
+  {tower:'PTP',type:'Process + Automation',title:'Intelligent 3-way match with exception prioritization',asis:'Team manually reviews PO, GRN, and invoice and works queue sequentially',tobe:'Standard cases auto-clear and high-risk exceptions are prioritized',primary:'AP Analyst',secondary:'AP Lead; Procurement Buyer; Receiving Team; Controls',population:'Large',pi:4,ti:4,pe:4,si:3,bi:4,ri:4,readiness:3,training:3,comm:3,control:4,resistance:4,interventions:'Workflow training; exception playbook; controls messaging',notes:'',status:'Active',owner:'AP Manager'},
+  {tower:'PTP',type:'Service Delivery + AI',title:'Conversational self-service for invoice/payment status',asis:'AP mailbox answers repetitive status queries manually',tobe:'Bot provides real-time status, FAQs, and case creation',primary:'AP Helpdesk Analyst',secondary:'Vendors; Employees; AP Manager',population:'Large',pi:3,ti:4,pe:3,si:3,bi:4,ri:3,readiness:4,training:3,comm:4,control:3,resistance:3,interventions:'FAQ rollout; stakeholder comms; KB governance',notes:'',status:'Active',owner:'AP Manager'},
+  {tower:'PTP',type:'Procurement + Workflow',title:'Guided requisition buying with catalog intelligence',asis:'Requestors create free-text requisitions with limited policy guidance',tobe:'Guided buying nudges preferred suppliers, catalogs, and policy-compliant options',primary:'Requisition Requestor',secondary:'Procurement Buyer; Budget Owner; Policy Team',population:'Large',pi:4,ti:4,pe:3,si:2,bi:4,ri:3,readiness:4,training:2,comm:4,control:3,resistance:3,interventions:'Persona comms; quick guides; policy reinforcement',notes:'Change impacts all cost center owners',status:'Active',owner:'Procurement Lead'},
+  {tower:'PTP',type:'Controls + Workflow',title:'No-PO/no-pay control enforcement',asis:'Invoices without PO are often processed via manual approval routes',tobe:'System blocks non-compliant invoices except defined policy exceptions',primary:'AP Lead',secondary:'Business Requestor; Procurement; Approvers; Controls',population:'Medium',pi:4,ti:3,pe:4,si:2,bi:4,ri:5,readiness:3,training:2,comm:5,control:5,resistance:4,interventions:'Policy campaign; leadership sponsorship; exception matrix',notes:'',status:'Active',owner:'Finance Controller'},
+  {tower:'PTP',type:'Supplier Data + Workflow',title:'Supplier onboarding workflow with validation and risk checks',asis:'Vendor onboarding is email-driven, fragmented, and slow',tobe:'Workflow validates tax/bank fields and performs risk/compliance checks',primary:'Vendor Master Analyst',secondary:'Procurement Ops; AP; Compliance; Requestor',population:'Medium',pi:4,ti:4,pe:3,si:3,bi:3,ri:4,readiness:3,training:3,comm:3,control:5,resistance:3,interventions:'SOPs; data standards; approver training; control walkthrough',notes:'~12,000 vendor records require cleansing',status:'Active',owner:'Master Data Lead'},
+  {tower:'PTP',type:'Payments + Controls',title:'Payment proposal automation with fraud/risk triggers',asis:'Payment runs are prepared manually with basic review',tobe:'System creates payment proposals and flags unusual bank/account patterns',primary:'Treasury/AP Payments Analyst',secondary:'AP Manager; Controller; Compliance; Bank Admin',population:'Medium',pi:4,ti:4,pe:4,si:3,bi:4,ri:5,readiness:3,training:4,comm:4,control:5,resistance:4,interventions:'Fraud scenarios; approval redesign; maker-checker refresher',notes:'Requires bank connectivity project',status:'Active',owner:'Treasury Lead'},
+  {tower:'PTP',type:'Analytics + Service Mgmt',title:'AP productivity and exception analytics cockpit',asis:'AP managers rely on static reports and manual tracker reviews',tobe:'Real-time dashboard shows queue ageing, touchless rate, and root causes',primary:'AP Manager',secondary:'AP Lead; GBS Lead; Process Excellence Team',population:'Medium',pi:3,ti:4,pe:3,si:3,bi:4,ri:3,readiness:4,training:3,comm:3,control:2,resistance:3,interventions:'KPI redesign; governance rhythm; manager coaching',notes:'',status:'Active',owner:'AP Manager'},
+  {tower:'PTP',type:'Expense + AI',title:'AI-assisted expense audit and policy checking',asis:'Expense claims are sampled manually after submission',tobe:'AI reviews all claims for policy violations and anomaly patterns',primary:'T&E Auditor',secondary:'Employees; Finance Policy Team; Approvers',population:'Large',pi:4,ti:4,pe:3,si:3,bi:4,ri:4,readiness:3,training:3,comm:4,control:4,resistance:4,interventions:'Policy education; auditor playbook; employee FAQs',notes:'',status:'Active',owner:'Finance Policy Lead'},
+  {tower:'PTP',type:'Supplier Collaboration + Digital',title:'Supplier portal for invoice submission and status transparency',asis:'Suppliers email invoices and chase payment status manually',tobe:'Suppliers submit invoices in portal and track status digitally',primary:'Supplier Relationship Coordinator',secondary:'Vendors; AP Helpdesk; AP Manager',population:'Large',pi:4,ti:4,pe:3,si:2,bi:4,ri:3,readiness:2,training:2,comm:4,control:3,resistance:3,interventions:'Supplier campaign; onboarding kits; dual-run cutover support',notes:'',status:'Active',owner:'AP Manager'},
+  {tower:'OTC',type:'Decisioning + AI',title:'AI-driven credit risk scoring and collection prioritization',asis:'Collectors prioritize using aging and individual judgement',tobe:'AI ranks customers by payment probability, dispute signals, and exposure',primary:'Collections Analyst',secondary:'Credit Analyst; OTC Manager; Sales Controller',population:'Medium',pi:4,ti:4,pe:4,si:4,bi:4,ri:4,readiness:3,training:4,comm:4,control:4,resistance:4,interventions:'KPI redesign; coaching; leadership messaging',notes:'',status:'Active',owner:'OTC Manager'},
+  {tower:'OTC',type:'Automation + AI',title:'Automated cash application',asis:'Receipts are matched manually using remittance details',tobe:'High-confidence matches auto-post and exceptions route to analysts',primary:'Cash Application Analyst',secondary:'Treasury Ops; OTC Lead; Reconciliation Team',population:'Medium',pi:5,ti:4,pe:4,si:3,bi:4,ri:4,readiness:3,training:3,comm:3,control:4,resistance:4,interventions:'Process training; trust dashboards; exception governance',notes:'Requires remittance data quality assessment',status:'Active',owner:'AR Manager'},
+  {tower:'OTC',type:'Workflow + AI',title:'AI-supported dispute classification and routing',asis:'Disputes arrive via mail/calls and are manually categorized',tobe:'AI classifies reason codes and routes cases to the right owner',primary:'Dispute Analyst',secondary:'Collections; Customer Service; Sales Ops; Master Data',population:'Medium',pi:4,ti:4,pe:4,si:4,bi:4,ri:4,readiness:3,training:4,comm:4,control:3,resistance:4,interventions:'Taxonomy training; workflow governance; RCA review cadence',notes:'',status:'Active',owner:'OTC Lead'},
+  {tower:'OTC',type:'Billing + Controls',title:'E-invoicing and digital billing compliance',asis:'Billing is generated with local workarounds and manual validation',tobe:'Standard digital invoicing flow supports compliance and audit trail',primary:'Billing Analyst',secondary:'Tax Team; OTC Lead; IT Support; Customers',population:'Medium',pi:4,ti:4,pe:3,si:3,bi:3,ri:5,readiness:3,training:3,comm:4,control:5,resistance:3,interventions:'Compliance comms; scenario training; process controls',notes:'External auditor alignment needed',status:'Active',owner:'Tax Manager'},
+  {tower:'OTC',type:'Customer Experience + Digital',title:'Customer self-service portal for invoice copies and account statements',asis:'Customers request copies and statements manually through service teams',tobe:'Customers retrieve invoices, statements, and dispute status online',primary:'Customer Service Analyst',secondary:'Customers; Collections; OTC Manager',population:'Large',pi:3,ti:4,pe:3,si:2,bi:4,ri:3,readiness:3,training:2,comm:4,control:2,resistance:3,interventions:'Customer enablement; FAQs; service-channel redesign',notes:'',status:'Active',owner:'OTC Manager'},
+  {tower:'OTC',type:'Collections + Workflow',title:'Promise-to-pay tracking with workflow nudges',asis:'Promise dates are tracked manually in notes or spreadsheets',tobe:'Workflow tracks promises, nudges collectors, and escalates broken promises',primary:'Collections Team Lead',secondary:'Collections Analysts; OTC Manager',population:'Medium',pi:3,ti:3,pe:3,si:2,bi:3,ri:3,readiness:4,training:2,comm:3,control:2,resistance:2,interventions:'Team huddles; KPI updates; usage tracker',notes:'',status:'Active',owner:'OTC Manager'},
+  {tower:'OTC',type:'Pricing/Order Controls',title:'Automated order release and credit hold decisioning',asis:'Order release decisions are manual and inconsistently applied',tobe:'System applies standardized credit-hold logic and release rules',primary:'Credit Analyst',secondary:'Order Management; Sales Ops; OTC Lead',population:'Medium',pi:4,ti:4,pe:4,si:3,bi:4,ri:5,readiness:3,training:3,comm:4,control:5,resistance:4,interventions:'Role alignment; hold policy messaging; exception matrix',notes:'',status:'Active',owner:'Credit Manager'},
+  {tower:'OTC',type:'Analytics + AI',title:'Collections effectiveness analytics with next-best action insights',asis:'Managers rely on aging and collector notes to judge performance',tobe:'Dashboard shows collector effectiveness, customer patterns, and suggested actions',primary:'OTC Manager',secondary:'Collections Team; Credit Team; Sales Controller',population:'Medium',pi:3,ti:4,pe:3,si:3,bi:4,ri:3,readiness:4,training:3,comm:3,control:2,resistance:3,interventions:'Coaching toolkit; governance reviews; action-tracking',notes:'',status:'Active',owner:'OTC Manager'},
+  {tower:'OTC',type:'Master Data + Controls',title:'Customer master workflow with duplicate and risk validation',asis:'Customer setup is fragmented with duplicate and incomplete records',tobe:'Workflow validates legal/tax/payment fields and prevents duplicates',primary:'Customer Master Analyst',secondary:'Sales Ops; Credit Team; Billing; Controls',population:'Medium',pi:4,ti:4,pe:3,si:3,bi:3,ri:4,readiness:3,training:3,comm:3,control:4,resistance:3,interventions:'Data standards; approval SLAs; quality dashboards',notes:'',status:'Active',owner:'Master Data Lead'},
+  {tower:'OTC',type:'Forecasting + Analytics',title:'AI-supported collections forecasting',asis:'Forecast is built manually using aging trends and local judgement',tobe:'Model predicts expected cash collection by segment and risk profile',primary:'Treasury/OTC Analyst',secondary:'CFO Team; OTC Manager; FP&A',population:'Medium',pi:3,ti:4,pe:3,si:4,bi:4,ri:4,readiness:3,training:4,comm:3,control:3,resistance:4,interventions:'Forecast governance; explanation packs; scenario reviews',notes:'',status:'Active',owner:'Treasury Lead'},
+  {tower:'RTR',type:'Automation + Controls',title:'Journal entry automation with policy-based controls',asis:'Recurring journals are prepared manually through spreadsheets',tobe:'Eligible journals auto-generate with workflow and audit trail',primary:'RTR Accountant',secondary:'GL Lead; Controller; Internal Audit',population:'Medium',pi:5,ti:4,pe:4,si:3,bi:4,ri:5,readiness:3,training:3,comm:4,control:5,resistance:4,interventions:'Controls walkthrough; audit engagement; close support',notes:'SOX control documentation must be updated',status:'Active',owner:'Finance Controller'},
+  {tower:'RTR',type:'Controls + AI',title:'AI-supported balance sheet reconciliation and anomaly detection',asis:'Reconciliations are spreadsheet-heavy and reviewer focus is manual',tobe:'Recs auto-prepare and anomalies are prioritized by risk',primary:'RTR Analyst',secondary:'Reconciliation Lead; Controller; Audit Teams',population:'Medium',pi:5,ti:4,pe:4,si:4,bi:4,ri:5,readiness:3,training:4,comm:4,control:5,resistance:4,interventions:'Investigative playbook; audit alignment; hypercare',notes:'',status:'Active',owner:'Controller'},
+  {tower:'RTR',type:'Close Mgmt + Analytics',title:'Intelligent close cockpit and predictive close readiness',asis:'Close is tracked through emails, meetings, and trackers',tobe:'Cockpit predicts bottlenecks and monitors dependency readiness',primary:'Close Manager',secondary:'RTR Lead; Controllers; Regional Finance Teams',population:'Medium',pi:4,ti:4,pe:3,si:3,bi:4,ri:4,readiness:3,training:3,comm:4,control:4,resistance:3,interventions:'Governance rhythm; close KPI redesign; leader reinforcement',notes:'',status:'Active',owner:'Close Manager'},
+  {tower:'RTR',type:'Intercompany + Workflow',title:'Intercompany matching and dispute workflow',asis:'Intercompany mismatches are resolved through email and local trackers',tobe:'Workflow auto-matches transactions and routes breaks to owners',primary:'Intercompany Accountant',secondary:'Regional Controllers; Shared Services; Business Finance',population:'Medium',pi:4,ti:4,pe:3,si:3,bi:4,ri:4,readiness:3,training:3,comm:3,control:4,resistance:3,interventions:'Owner matrix; SLA tracking; month-end war room support',notes:'',status:'Active',owner:'Group Controller'},
+  {tower:'RTR',type:'Fixed Assets + Controls',title:'Fixed asset capitalization workflow and rule automation',asis:'Capitalization decisions are manually reviewed and inconsistently documented',tobe:'Workflow applies capitalization rules and routes exceptions',primary:'Fixed Asset Accountant',secondary:'Project Managers; Controller; AP; Audit',population:'Medium',pi:4,ti:3,pe:3,si:3,bi:3,ri:4,readiness:3,training:3,comm:3,control:5,resistance:3,interventions:'Policy examples; documentation checklist; audit readiness training',notes:'',status:'Active',owner:'Controller'},
+  {tower:'RTR',type:'Analytics + Controls',title:'Blackline-style task management and certification workflow',asis:'Tasks and certifications are tracked via manual checklists',tobe:'Digital certification workflow monitors completion, evidence, and sign-off',primary:'Controller',secondary:'RTR Team; Compliance; Internal Audit',population:'Medium',pi:4,ti:4,pe:3,si:3,bi:4,ri:5,readiness:3,training:3,comm:4,control:5,resistance:3,interventions:'Certification calendar; evidence standards; controls coaching',notes:'',status:'Active',owner:'Controller'},
+  {tower:'RTR',type:'Consolidation + Platform',title:'Group consolidation platform replacing spreadsheet packs',asis:'Consolidation packs and eliminations are coordinated through offline files',tobe:'Central platform performs consolidation, validation, and reporting',primary:'Consolidation Analyst',secondary:'Group Finance; Controllers; External Reporting',population:'Medium',pi:5,ti:5,pe:4,si:4,bi:4,ri:5,readiness:3,training:4,comm:4,control:5,resistance:4,interventions:'Phased rollout; parallel run; super-user model',notes:'Critical dependency on chart of accounts harmonization',status:'On Hold',owner:'Group Finance Director'},
+  {tower:'RTR',type:'Compliance + Digital',title:'Lease accounting automation (IFRS 16)',asis:'Lease accounting is managed through spreadsheets and manual calculations',tobe:'Lease engine calculates liabilities, amortization, and disclosures',primary:'Technical Accounting Analyst',secondary:'Controller; External Reporting; Audit',population:'Medium',pi:4,ti:4,pe:3,si:4,bi:3,ri:5,readiness:3,training:4,comm:3,control:5,resistance:3,interventions:'Technical training; data cleanup; policy-control review',notes:'',status:'Active',owner:'Technical Accounting Lead'},
+  {tower:'RTR',type:'Variance Analytics + AI',title:'Flux analysis with AI-generated movement commentary',asis:'Teams manually review GL movements and write explanations late',tobe:'Tool flags unusual movements and drafts commentary for review',primary:'GL Analyst',secondary:'Controller; FP&A; Close Manager',population:'Medium',pi:3,ti:4,pe:3,si:4,bi:4,ri:4,readiness:3,training:4,comm:3,control:3,resistance:4,interventions:'Commentary standards; review checkpoints; controller coaching',notes:'',status:'Active',owner:'GL Lead'},
+  {tower:'RTR',type:'Entity Controls + Workflow',title:'Balance sheet ownership and attestation by account owner',asis:'Ownership of accounts is unclear and review is heavily centralized',tobe:'Named account owners certify balances and aging/resolution actions',primary:'Controller',secondary:'RTR Analysts; Regional Finance; Audit',population:'Medium',pi:4,ti:3,pe:4,si:3,bi:4,ri:4,readiness:3,training:3,comm:4,control:5,resistance:4,interventions:'Account-owner training; RACI update; attestation cadence',notes:'',status:'Active',owner:'Controller'},
+  {tower:'FPA',type:'Planning Platform + Process + Role',title:'Driver-based planning replacing spreadsheet budgeting',asis:'Budgeting is annual, spreadsheet-led, and weakly tied to drivers',tobe:'Integrated planning uses operational drivers, rolling forecast, and scenarios',primary:'FP&A Analyst',secondary:'FP&A Manager; Finance BP; Function Heads; CFO',population:'Large',pi:5,ti:5,pe:5,si:4,bi:5,ri:5,readiness:3,training:4,comm:5,control:4,resistance:5,interventions:'Executive sponsorship; planning playbooks; phased rollout',notes:'Biggest behavioural change for FP&A team',status:'Active',owner:'FP&A Director'},
+  {tower:'FPA',type:'AI + Insight Generation',title:'AI-generated forecast commentary and variance insights',asis:'Analysts manually write commentary packs for leadership reviews',tobe:'AI drafts insights, outliers, and possible business actions',primary:'FP&A Analyst',secondary:'Finance BP; CFO Review Team; BU Leaders',population:'Medium',pi:4,ti:4,pe:4,si:4,bi:4,ri:4,readiness:3,training:4,comm:4,control:3,resistance:4,interventions:'AI usage guardrails; review standards; examples library',notes:'',status:'Active',owner:'FP&A Manager'},
+  {tower:'FPA',type:'Scenario Modeling + Decision Support',title:'On-demand scenario modeling for margin, volume, cost, and FX',asis:'Scenario analysis is manual, slow, and limited to a few cases',tobe:'Users run fast scenarios with shared assumptions and outputs',primary:'Finance Business Partner',secondary:'FP&A Team; BU CFO; Commercial Finance; Supply Finance',population:'Medium',pi:4,ti:4,pe:4,si:4,bi:5,ri:4,readiness:3,training:4,comm:4,control:3,resistance:4,interventions:'Scenario workshops; business demos; assumption governance',notes:'',status:'Active',owner:'FP&A Lead'},
+  {tower:'FPA',type:'Forecasting + AI',title:'Predictive forecasting with machine learning overlay',asis:'Forecasts rely heavily on manual extrapolation and local judgment',tobe:'ML suggests baseline forecast and confidence bands for review',primary:'FP&A Manager',secondary:'Analysts; CFO Team; Business Leads',population:'Medium',pi:4,ti:4,pe:4,si:4,bi:4,ri:4,readiness:3,training:4,comm:4,control:3,resistance:4,interventions:'Forecast governance; baseline-vs-final reviews; training',notes:'',status:'Active',owner:'FP&A Manager'},
+  {tower:'FPA',type:'Cost Analytics + Digital',title:'Cost center self-service analytics dashboard',asis:'Managers depend on FP&A to produce static cost reports',tobe:'Managers access live cost, trend, and variance dashboards directly',primary:'Cost Center Manager',secondary:'FP&A Analyst; BU Finance; CFO Team',population:'Large',pi:3,ti:4,pe:3,si:2,bi:4,ri:3,readiness:3,training:2,comm:4,control:2,resistance:3,interventions:'Manager enablement; dashboard walkthroughs; support model',notes:'',status:'Active',owner:'FP&A Analyst'},
+  {tower:'FPA',type:'Value Management + Analytics',title:'Benefit tracking linked to transformation initiatives',asis:'Benefits are tracked offline with inconsistent ownership',tobe:'Benefit tracker links initiative milestones, savings, and owner accountability',primary:'Transformation Finance Analyst',secondary:'Program Leads; FP&A Manager; CFO PMO',population:'Medium',pi:3,ti:3,pe:4,si:3,bi:4,ri:4,readiness:3,training:3,comm:4,control:3,resistance:4,interventions:'Benefit dictionary; owner cadence; PMO governance',notes:'',status:'Active',owner:'CFO PMO'},
+  {tower:'FPA',type:'Sales/Commercial Finance + AI',title:'Revenue and margin bridge with AI driver insights',asis:'Revenue bridge is manually prepared and often late',tobe:'Tool auto-builds bridge and highlights mix/price/volume drivers',primary:'Commercial Finance Analyst',secondary:'Sales Finance; BU CFO; FP&A',population:'Medium',pi:3,ti:4,pe:3,si:4,bi:4,ri:3,readiness:3,training:4,comm:3,control:2,resistance:3,interventions:'Insight training; bridge glossary; review templates',notes:'',status:'Active',owner:'Commercial Finance Lead'},
+  {tower:'FPA',type:'Workforce Planning + Integration',title:'Workforce planning integrated with finance plan',asis:'Workforce assumptions are handled offline and reconciled late',tobe:'Headcount, hiring, attrition, and cost assumptions integrate into forecast',primary:'Workforce Planning Analyst',secondary:'HR Finance; FP&A; Business Leaders',population:'Medium',pi:4,ti:4,pe:4,si:3,bi:4,ri:4,readiness:3,training:3,comm:4,control:3,resistance:3,interventions:'Joint planning calendar; HR-finance alignment sessions',notes:'',status:'Active',owner:'FP&A Manager'},
+  {tower:'FPA',type:'Governance + Performance Mgmt',title:'Rolling forecast replacing annual static mindset',asis:'Forecasting is periodic and heavily centered on budget variance',tobe:'Rolling forecast becomes a regular forward-looking management tool',primary:'FP&A Head',secondary:'FP&A Team; Business Leads; Executive Team',population:'Medium',pi:5,ti:3,pe:5,si:4,bi:5,ri:4,readiness:2,training:4,comm:5,control:3,resistance:5,interventions:'Executive alignment; governance reset; leadership messaging',notes:'Major governance shift — executive alignment critical',status:'Active',owner:'CFO'},
+  {tower:'FPA',type:'Capital Planning + Decision Support',title:'Investment prioritization and portfolio scenario review',asis:'Capex decisions are reviewed in silos with weak trade-off visibility',tobe:'Portfolio model compares initiatives, returns, timing, and risk scenarios',primary:'Corporate FP&A Manager',secondary:'Strategy Team; BU CFOs; Investment Committee',population:'Medium',pi:4,ti:4,pe:4,si:4,bi:4,ri:4,readiness:3,training:4,comm:4,control:3,resistance:4,interventions:'Investment criteria pack; committee workshops; scenario templates',notes:'',status:'Active',owner:'Corporate FP&A Manager'},
+  {tower:'RTR',type:'Automation + Controls',title:'Universal Journal (ACDOCA) replacing multiple ledgers',asis:'Separate FI, CO, and profitability ledgers with monthly reconciliation effort',tobe:'Single universal journal in S/4HANA eliminates inter-ledger reconciliation',primary:'Controller',secondary:'GL Lead; FP&A Manager; Tax Manager; External Reporting',population:'Large',pi:5,ti:5,pe:4,si:4,bi:4,ri:5,readiness:3,training:4,comm:4,control:5,resistance:4,interventions:'Parallel run; controls walkthrough; audit pre-read; hypercare',notes:'Critical path change — impacts statutory and management reporting simultaneously',status:'Active',owner:'Finance Controller'},
+  {tower:'RTR',type:'Reporting + Analytics',title:'Embedded analytics replacing BW/BI reporting',asis:'Finance reporting runs through BW with significant batch delays',tobe:'S/4HANA embedded analytics delivers real-time financial views',primary:'GL Analyst',secondary:'Controllers; FP&A; Business Leaders; GBS',population:'Large',pi:3,ti:5,pe:3,si:4,bi:4,ri:4,readiness:3,training:4,comm:4,control:3,resistance:3,interventions:'Report migration workshops; super-user program; data validation',notes:'Significant report migration effort required',status:'Active',owner:'Finance Systems Lead'},
+  {tower:'PTP',type:'Tax + Compliance',title:'Tax determination and compliance automation',asis:'Tax codes are applied manually with high risk of error',tobe:'System applies tax determination rules automatically at transaction level',primary:'Tax Analyst',secondary:'AP Lead; Treasury; External Auditor; Finance Controller',population:'Medium',pi:4,ti:4,pe:3,si:3,bi:3,ri:5,readiness:3,training:3,comm:3,control:5,resistance:3,interventions:'Tax SME training; compliance testing; audit engagement',notes:'',status:'Active',owner:'Tax Manager'},
+  {tower:'OTC',type:'Revenue Recognition + Controls',title:'Automated revenue recognition (IFRS 15 / ASC 606)',asis:'Revenue entries are manually calculated and deferred based on local models',tobe:'System auto-recognizes revenue based on performance obligation logic',primary:'Revenue Accountant',secondary:'Billing; OTC Lead; Technical Accounting; Audit',population:'Medium',pi:5,ti:5,pe:4,si:5,bi:4,ri:5,readiness:2,training:5,comm:4,control:5,resistance:4,interventions:'Technical accounting deep-dive; contract data migration; audit pre-read',notes:'High technical complexity — early audit engagement essential',status:'Active',owner:'Technical Accounting Lead'},
+  {tower:'PTP',type:'GBS + Org Design',title:'Shift to GBS service delivery model for AP',asis:'AP is decentralized with local teams handling processing directly',tobe:'GBS center provides standardized AP processing across all entities',primary:'AP Manager',secondary:'Local Finance; HR; GBS Leadership; Finance Controller',population:'Large',pi:5,ti:3,pe:5,si:3,bi:5,ri:4,readiness:2,training:3,comm:5,control:4,resistance:5,interventions:'Change narrative; GBS governance model; retention and transition plan',notes:'High resistance expected from local finance teams',status:'Active',owner:'GBS Transformation Lead'},
+  {tower:'OTC',type:'GBS + Org Design',title:'Centralisation of credit and collections in GBS',asis:'Credit and collections are managed locally by regional finance teams',tobe:'GBS manages standardized credit policy and collections across entities',primary:'Collections Analyst',secondary:'Regional Finance; Sales; OTC Manager; GBS Lead',population:'Large',pi:4,ti:3,pe:5,si:3,bi:5,ri:4,readiness:2,training:3,comm:5,control:4,resistance:5,interventions:'Leadership alignment; role transition support; GBS governance',notes:'Political sensitivity around centralisation',status:'Active',owner:'GBS Transformation Lead'},
+  {tower:'FPA',type:'Zero-Based Budgeting + Methodology',title:'Zero-based budgeting (ZBB) methodology introduction',asis:'Budgeting is incremental with prior year as default baseline',tobe:'ZBB requires all costs to be justified from scratch each cycle',primary:'FP&A Manager',secondary:'FP&A Analysts; CFO; Business Unit Heads; Cost Owners',population:'Large',pi:5,ti:2,pe:5,si:4,bi:5,ri:4,readiness:2,training:4,comm:5,control:3,resistance:5,interventions:'Executive mandate; ZBB toolkit; owner coaching; phased rollout',notes:'Significant political and behavioral resistance expected',status:'Active',owner:'CFO'},
+  {tower:'RTR',type:'Tax Reporting + Digital',title:'SAP Tax Compliance and digital VAT reporting',asis:'VAT returns are prepared manually using spreadsheet extracts',tobe:'Automated VAT reporting and submission via S/4HANA tax compliance module',primary:'Tax Analyst',secondary:'Finance Controller; AP/AR; IT; External Auditor',population:'Medium',pi:4,ti:4,pe:3,si:4,bi:3,ri:5,readiness:3,training:4,comm:3,control:5,resistance:3,interventions:'Country-by-country rollout; tax authority alignment; SOP update',notes:'',status:'Active',owner:'Tax Manager'},
+  {tower:'FPA',type:'Strategic Finance + CFO',title:'Integrated business review (IBR) process redesign',asis:'MBR and QBR processes are fragmented, time-heavy, and backward-looking',tobe:'IBR is forward-looking, scenario-driven, and integrated across finance and business',primary:'CFO / Finance Director',secondary:'FP&A Head; Business Leads; Executive Team',population:'Medium',pi:5,ti:3,pe:5,si:4,bi:5,ri:4,readiness:2,training:3,comm:5,control:2,resistance:4,interventions:'Executive design sprint; process blueprint; leadership coaching',notes:'Strong executive sponsorship is the critical dependency',status:'Active',owner:'CFO'},
+  {tower:'PTP',type:'Inventory + Operations Finance',title:'Inventory valuation and stock movement automation',asis:'Inventory movements and valuation adjustments are manually processed',tobe:'S/4HANA auto-values stock movements using standard/moving average methods',primary:'Inventory Controller',secondary:'Supply Chain Finance; AP; Fixed Asset Accountant; Audit',population:'Medium',pi:4,ti:4,pe:3,si:4,bi:3,ri:4,readiness:3,training:4,comm:3,control:5,resistance:3,interventions:'Valuation policy training; cutover data validation; controls walkthrough',notes:'',status:'Active',owner:'Finance Controller'},
+  {tower:'OTC',type:'Treasury + Cashflow',title:'Treasury cash pooling and in-house bank integration',asis:'Intercompany funding and cash positioning are manual and fragmented',tobe:'In-house bank centralizes intercompany cash flows with real-time visibility',primary:'Treasury Analyst',secondary:'CFO; AP Payments; RTR Lead; Banks',population:'Medium',pi:5,ti:5,pe:4,si:4,bi:4,ri:5,readiness:2,training:4,comm:4,control:5,resistance:3,interventions:'Treasury SME training; bank connectivity project; controls design',notes:'',status:'On Hold',owner:'Group Treasury Manager'},
+  {tower:'RTR',type:'Group Reporting + IFRS',title:'Group management reporting standardization',asis:'Management reports vary by region with inconsistent definitions and formats',tobe:'Standardized group management reporting pack with single definitions',primary:'Group Financial Controller',secondary:'Regional Controllers; Group Finance; CFO',population:'Medium',pi:4,ti:4,pe:4,si:3,bi:4,ri:4,readiness:3,training:3,comm:4,control:4,resistance:4,interventions:'Definition alignment workshops; reporting governance; super-user model',notes:'',status:'Active',owner:'Group Finance Director'},
+  {tower:'FPA',type:'ESG + Sustainability Reporting',title:'Sustainability / ESG data integration into financial reporting',asis:'ESG metrics are collected manually and reported separately',tobe:'ESG data flows into S/4HANA and is included in integrated reporting',primary:'Sustainability Finance Lead',secondary:'FP&A; CFO; Legal; ESG Team; External Auditor',population:'Medium',pi:4,ti:4,pe:4,si:5,bi:4,ri:4,readiness:2,training:5,comm:4,control:4,resistance:3,interventions:'ESG reporting framework training; data governance; auditor briefing',notes:'Regulatory timeline creates urgency',status:'Active',owner:'CFO'},
+  {tower:'RTR',type:'Period-End + Automation',title:'Automated period-end accruals and cut-off procedures',asis:'Month-end accruals are manually calculated from emails and spreadsheets',tobe:'Accrual engine auto-calculates recurring items with configurable rules',primary:'RTR Analyst',secondary:'GL Lead; Controllers; FP&A; Shared Services',population:'Medium',pi:4,ti:4,pe:3,si:3,bi:4,ri:4,readiness:3,training:3,comm:3,control:4,resistance:3,interventions:'Accrual policy review; rule testing; controls documentation',notes:'',status:'Active',owner:'GL Lead'},
+  {tower:'PTP',type:'Procurement Analytics + AI',title:'Spend analytics and supplier performance cockpit',asis:'Spend data is extracted and analyzed ad hoc from multiple sources',tobe:'Consolidated spend cockpit shows category, supplier, and compliance trends',primary:'Category Manager',secondary:'Procurement Ops; Finance Controller; AP Manager',population:'Medium',pi:3,ti:4,pe:3,si:3,bi:4,ri:3,readiness:3,training:3,comm:3,control:2,resistance:3,interventions:'Analytics training; KPI design; governance rhythm',notes:'',status:'Active',owner:'Chief Procurement Officer'},
+  {tower:'OTC',type:'Order Management + Automation',title:'Order management automation and booking workflow',asis:'Order entry is manual and error-prone with limited validation',tobe:'Guided order entry validates pricing, credit, and stock availability in real-time',primary:'Order Management Analyst',secondary:'Sales; Credit; Logistics; Billing',population:'Large',pi:4,ti:4,pe:3,si:3,bi:4,ri:4,readiness:3,training:3,comm:4,control:3,resistance:3,interventions:'Order policy training; system walkthrough; cutover support',notes:'',status:'Active',owner:'OTC Manager'},
+  {tower:'RTR',type:'Chart of Accounts + Harmonization',title:'Chart of accounts harmonization and simplification',asis:'Multiple local CoA variants with inconsistent mapping across entities',tobe:'Single global chart of accounts adopted across all legal entities',primary:'Group Financial Controller',secondary:'Local Controllers; FP&A; Tax; IT; External Auditor',population:'Large',pi:5,ti:5,pe:4,si:4,bi:4,ri:5,readiness:2,training:4,comm:5,control:5,resistance:5,interventions:'Entity-by-entity workstreams; legal and tax sign-off; parallel run',notes:'Foundational dependency for consolidation and reporting changes',status:'Active',owner:'Group Finance Director'},
+  {tower:'PTP',type:'Master Data + Governance',title:'Finance master data governance and ownership model',asis:'Master data ownership is unclear with fragmented maintenance processes',tobe:'Formal MDG governance with named owners, SLAs, and quality dashboards',primary:'Master Data Lead',secondary:'Finance Controllers; IT; Business Process Owners',population:'Medium',pi:3,ti:4,pe:4,si:3,bi:4,ri:4,readiness:3,training:3,comm:4,control:4,resistance:3,interventions:'Governance charter; owner training; data quality KPIs',notes:'',status:'Active',owner:'Finance Systems Lead'},
+];
+
+// ================================================================
+// STATE
+// ================================================================
+let masterData = [];
+let nextId = 1;
+let editingId = null;
+let expandedId = null;
+let globalFilter = {};
+let weights = { pi:25, ti:20, pe:20, si:15, bi:15, ri:5 };
+let charts = {};
+
+// ================================================================
+// CALC
+// ================================================================
+function calcImpact(r) {
+  const total = weights.pi + weights.ti + weights.pe + weights.si + weights.bi + weights.ri;
+  return ((r.pi*weights.pi + r.ti*weights.ti + r.pe*weights.pe + r.si*weights.si + r.bi*weights.bi + r.ri*weights.ri) / total);
+}
+function riskLevel(impact) {
+  return impact >= 3.8 ? 'High' : impact >= 2.6 ? 'Medium' : 'Low';
+}
+function recalcAll() {
+  masterData.forEach(r => { r.impact = calcImpact(r); r.risk = riskLevel(r.impact); });
+  updateKPIs();
+}
+function scoreClass(v) {
+  return ['','sp1','sp2','sp3','sp4','sp5'][Math.min(5,Math.max(1,Math.round(v)))];
+}
+function getFilteredData() {
+  return masterData.filter(r => {
+    const q = (globalFilter.search||'').toLowerCase();
+    if (q && !r.title.toLowerCase().includes(q) && !r.primary.toLowerCase().includes(q)) return false;
+    if (globalFilter.tower && r.tower !== globalFilter.tower) return false;
+    if (globalFilter.risk && r.risk !== globalFilter.risk) return false;
+    if (globalFilter.status && (r.status||'Active') !== globalFilter.status) return false;
+    return true;
+  });
+}
+
+// ================================================================
+// KPIs
+// ================================================================
+function updateKPIs() {
+  const data = getFilteredData();
+  const n = data.length;
+  const high = data.filter(r => r.risk === 'High').length;
+  const avg = n ? (data.reduce((s,r) => s+r.impact, 0)/n).toFixed(2) : '—';
+  const ctrl = n ? (data.reduce((s,r) => s+(r.control||3), 0)/n).toFixed(1) : '—';
+  const pMap = {};
+  data.forEach(r => {
+    const k = r.primary||'Unknown';
+    if (!pMap[k]) pMap[k] = {s:0,c:0};
+    pMap[k].s += r.impact; pMap[k].c++;
+  });
+  const topP = Object.entries(pMap).sort((a,b) => (b[1].s/b[1].c)-(a[1].s/a[1].c))[0];
+  document.getElementById('kpi-total').textContent = n;
+  document.getElementById('kpi-high').textContent  = high;
+  document.getElementById('kpi-avg').textContent   = avg;
+  document.getElementById('kpi-persona').textContent = topP ? topP[0].split('/')[0].trim().substring(0,16) : '—';
+  document.getElementById('kpi-control').textContent = ctrl;
+  document.getElementById('gf-count').textContent    = n;
+}
+
+// ================================================================
+// NAVIGATE
+// ================================================================
+const PAGE_TITLES = {
+  overview:'Overview', register:'Change Register',
+  heatmap:'Heatmap', strategy:'Strategy', training:'Training Plan'
+};
+let currentPage = 'overview';
+function navigate(p) {
+  document.querySelectorAll('.page').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+  document.getElementById('page-'+p).classList.add('active');
+  document.getElementById('nav-'+p).classList.add('active');
+  document.getElementById('page-heading').textContent = PAGE_TITLES[p]||p;
+  currentPage = p;
+  if (p === 'overview') renderOverview();
+  if (p === 'register') renderRegister();
+  if (p === 'heatmap')  renderHeatmap();
+  if (p === 'strategy') renderStrategy();
+  if (p === 'training') renderTraining();
+}
+
+// ================================================================
+// GLOBAL FILTERS
+// ================================================================
+function applyGlobalFilters() {
+  globalFilter.search = document.getElementById('gf-search').value.trim();
+  globalFilter.tower  = document.getElementById('gf-tower').value;
+  globalFilter.risk   = document.getElementById('gf-risk').value;
+  globalFilter.status = document.getElementById('gf-status').value;
+  updateKPIs();
+  if (currentPage === 'overview') renderOverview();
+  if (currentPage === 'register') renderRegister();
+  if (currentPage === 'heatmap')  renderHeatmap();
+  if (currentPage === 'strategy') renderStrategy();
+  if (currentPage === 'training') renderTraining();
+}
+function clearGlobalFilters() {
+  ['gf-search','gf-tower','gf-risk','gf-status'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) { el.tagName === 'SELECT' ? el.value = '' : el.value = ''; }
+  });
+  globalFilter = {};
+  applyGlobalFilters();
+}
+
+// ================================================================
+// WEIGHTS
+// ================================================================
+function toggleWeights() {
+  const p = document.getElementById('weights-panel');
+  const a = document.getElementById('weights-toggle-arrow');
+  p.classList.toggle('open');
+  a.textContent = p.classList.contains('open') ? '▲' : '▼';
+}
+function updateWeights() {
+  ['pi','ti','pe','si','bi','ri'].forEach(k => {
+    weights[k] = +document.getElementById('w-'+k).value;
+    const pct = Math.round(weights[k]);
+    document.getElementById('wp-'+k).textContent = pct+'%';
+  });
+  const total = Object.values(weights).reduce((a,b)=>a+b,0);
+  const el = document.getElementById('weights-total');
+  el.textContent = 'Total: '+total+'%'+( total===100?' ✓':' — must equal 100');
+  el.className = 'weight-total '+(total===100?'weight-ok':'weight-over');
+  recalcAll();
+  if (currentPage === 'register') renderRegister();
+}
+
+// ================================================================
+// DESTROY CHARTS
+// ================================================================
+function dc(key) {
+  if (charts[key]) { charts[key].destroy(); delete charts[key]; }
+}
+
+// ================================================================
+// OVERVIEW
+// ================================================================
+function renderOverview() {
+  ['ov-tower','ov-risk'].forEach(k => dc(k));
+  const data = getFilteredData();
+  const n = data.length;
+  const high = data.filter(r=>r.risk==='High').length;
+  const med  = data.filter(r=>r.risk==='Medium').length;
+  const lo   = data.filter(r=>r.risk==='Low').length;
+  const avg  = n ? (data.reduce((s,r)=>s+r.impact,0)/n).toFixed(1) : '—';
+
+  document.getElementById('hero-total').textContent = n;
+  document.getElementById('hero-high').textContent  = high;
+  document.getElementById('hero-avg').textContent   = avg;
+  document.getElementById('ov-high').textContent    = high;
+  document.getElementById('ov-medium').textContent  = med;
+  document.getElementById('ov-low').textContent     = lo;
+
+  // Tower chart
+  const tAvgs = TOWERS.map(t => {
+    const rows = data.filter(r=>r.tower===t.id);
+    return rows.length ? (rows.reduce((a,r)=>a+r.impact,0)/rows.length).toFixed(2) : 0;
+  });
+  charts['ov-tower'] = new Chart(document.getElementById('chart-ov-tower').getContext('2d'),{
+    type:'bar',
+    data:{
+      labels:TOWERS.map(t=>t.id),
+      datasets:[{
+        data:tAvgs,
+        backgroundColor:TOWERS.map(t=>t.color+'88'),
+        borderColor:TOWERS.map(t=>t.color),
+        borderWidth:2, borderRadius:5
+      }]
+    },
+    options:{
+      plugins:{legend:{display:false}},
+      scales:{y:{min:0,max:5,title:{display:true,text:'Avg Impact'}}},
+      responsive:true
+    }
+  });
+
+  // Risk donut
+  charts['ov-risk'] = new Chart(document.getElementById('chart-ov-risk').getContext('2d'),{
+    type:'doughnut',
+    data:{
+      labels:['High','Medium','Low'],
+      datasets:[{
+        data:[high,med,lo],
+        backgroundColor:['#DC262688','#D9770688','#16A34A88'],
+        borderColor:['#DC2626','#D97706','#16A34A'],
+        borderWidth:2
+      }]
+    },
+    options:{plugins:{legend:{position:'bottom'}},responsive:true,cutout:'58%'}
+  });
+
+  // Top 10
+  const top10 = [...data].sort((a,b)=>b.impact-a.impact).slice(0,10);
+  document.getElementById('ov-top10').innerHTML = top10.map((r,i)=>{
+    const t = TOWERS.find(x=>x.id===r.tower);
+    const col = r.risk==='High'?'#DC2626':r.risk==='Medium'?'#D97706':'#16A34A';
+    return `<div class="top-change-row">
+      <div class="top-change-rank">${i+1}</div>
+      <span style="font-size:13px;">${t?t.icon:''}</span>
+      <div class="top-change-info">
+        <div class="top-change-title">${r.title}</div>
+        <div class="top-change-meta">${r.tower} · ${r.primary||''}</div>
+      </div>
+      <span class="risk-badge risk-${r.risk.toLowerCase()}">${r.risk}</span>
+      <span class="top-change-score">${r.impact.toFixed(1)}</span>
+    </div>`;
+  }).join('');
+
+  // Personas
+  const pMap = {};
+  data.forEach(r => {
+    const k = r.primary||'Unknown';
+    if (!pMap[k]) pMap[k] = {s:0,c:0};
+    pMap[k].s += r.impact; pMap[k].c++;
+  });
+  const top8 = Object.entries(pMap).map(([name,v])=>({name,avg:(v.s/v.c)}))
+    .sort((a,b)=>b.avg-a.avg).slice(0,8);
+  document.getElementById('ov-personas').innerHTML = top8.map(p=>{
+    const pct = (p.avg/5*100).toFixed(0);
+    const rc = p.avg<2.5?'low':p.avg<3.5?'medium':'high';
+    return `<div class="persona-card">
+      <div class="persona-icon">👤</div>
+      <div class="persona-name">${p.name.split('/')[0].trim().substring(0,18)}</div>
+      <div class="persona-bar-bg"><div class="persona-bar pbar-${rc}" style="width:${pct}%"></div></div>
+      <div class="persona-score">${p.avg.toFixed(1)}</div>
+      <div class="persona-count">${rc==='high'?'High':rc==='medium'?'Med':'Low'} exposure</div>
+    </div>`;
+  }).join('');
+
+  // Insights
+  const highCtrl = data.filter(r=>(r.control||3)>=4).length;
+  const highBi   = data.filter(r=>r.bi>=4).length;
+  const topT = TOWERS.map(t=>{
+    const rows=data.filter(r=>r.tower===t.id);
+    return {id:t.id,avg:rows.length?(rows.reduce((a,r)=>a+r.impact,0)/rows.length):0};
+  }).sort((a,b)=>b.avg-a.avg)[0];
+  document.getElementById('ov-insights').innerHTML = `
+    <div class="insight-item"><span class="insight-dot i-red"></span><span class="insight-text"><strong>${high} high-risk changes</strong> require priority OCM investment — particularly in RTR and FP&A towers where control sensitivity and behavioural shift are highest.</span></div>
+    <div class="insight-item"><span class="insight-dot i-amber"></span><span class="insight-text"><strong>${topT.id} has the highest average impact (${topT.avg.toFixed(1)}/5)</strong> — prioritise this tower's OCM resources and go-live sequencing.</span></div>
+    <div class="insight-item"><span class="insight-dot i-amber"></span><span class="insight-text"><strong>${highCtrl} changes score 4+ on Control Sensitivity</strong> — engage Internal Audit and SOX teams early to redesign controls before go-live.</span></div>
+    <div class="insight-item"><span class="insight-dot i-green"></span><span class="insight-text"><strong>${highBi} changes require high behavior shift.</strong> Invest in hypercare programs, change champion networks, and AI trust campaigns well before deployment.</span></div>
+  `;
+}
+
+// ================================================================
+// CHANGE REGISTER
+// ================================================================
+function renderRegister() {
+  const data = getFilteredData();
+  document.getElementById('reg-count').textContent = data.length;
+  document.getElementById('register-tbody').innerHTML = data.map(r => {
+    const col = r.risk==='High'?'#DC2626':r.risk==='Medium'?'#D97706':'#16A34A';
+    const pct = (r.impact/5*100).toFixed(0);
+    const isOpen = expandedId === r.id;
+    return `
+    <tr>
+      <td>
+        <button class="expand-btn" onclick="toggleExpand(${r.id})" title="View dimension scores">
+          ${isOpen ? '▼' : '▶'}
+        </button>
+      </td>
+      <td><span class="tower-pill t-${r.tower}">${r.tower}</span></td>
+      <td style="max-width:280px;font-weight:500;font-size:11.5px;">${r.title}</td>
+      <td style="font-size:11px;color:var(--gray-600);">${r.primary||''}</td>
+      <td><span class="tag tag-gray">${r.population||'—'}</span></td>
+      <td>
+        <div class="impact-bar-wrap">
+          <div class="impact-bar-bg"><div class="impact-bar-fill" style="width:${pct}%;background:${col};border-radius:3px;height:6px;"></div></div>
+          <span class="impact-val">${r.impact.toFixed(1)}</span>
+        </div>
+      </td>
+      <td><span class="risk-badge risk-${r.risk.toLowerCase()}">${r.risk}</span></td>
+      <td><span class="tag ${r.status==='Active'?'tag-teal':r.status==='On Hold'?'tag-amber':'tag-green'}">${r.status||'Active'}</span></td>
+      <td>
+        <div style="display:flex;gap:5px;">
+          <button class="btn btn-ghost btn-sm" onclick="openDrawer(${r.id})">Edit</button>
+          <button class="btn btn-danger btn-sm" onclick="deleteRow(${r.id})">✕</button>
+        </div>
+      </td>
+    </tr>
+    <tr class="expand-row${isOpen?' open':''}">
+      <td class="expand-cell" colspan="9">
+        <div class="expand-inner">
+          ${renderExpandDetail(r)}
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function renderExpandDetail(r) {
+  const dimColors = ['#0D9488','#2563EB','#9333EA','#D97706','#DC2626','#EA580C'];
+  const dimOrder  = ['pi','ti','pe','si','bi','ri'];
+  const dimNames  = ['Process Impact','Technology Impact','People / Role','Skill Impact','Behavior / Adoption','Risk if Not Managed'];
+  const cards = dimOrder.map((k,i) => {
+    const v = r[k]||1;
+    const desc = DESCS[k][v-1]||'';
+    const col = v<=1?'#16A34A':v<=2?'#2563EB':v<=3?'#D97706':v<=4?'#EA580C':'#DC2626';
+    return `<div class="dim-detail-card">
+      <div class="dim-detail-name">${dimNames[i]}</div>
+      <div class="dim-detail-score" style="color:${col};">${v}<span style="font-size:12px;font-weight:400;color:var(--gray-400);"> /5</span></div>
+      <div class="dim-detail-desc">${desc}</div>
+    </div>`;
+  }).join('');
+
+  const asisTobeHtml = (r.asis||r.tobe) ? `
+    <div class="grid-2" style="margin-top:12px;">
+      <div style="background:var(--red-lt);border-radius:6px;padding:10px 12px;">
+        <div style="font-size:8.5px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--red);margin-bottom:4px;">As-Is</div>
+        <div style="font-size:11px;color:var(--gray-700);line-height:1.55;">${r.asis||'—'}</div>
+      </div>
+      <div style="background:var(--green-lt);border-radius:6px;padding:10px 12px;">
+        <div style="font-size:8.5px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--green);margin-bottom:4px;">To-Be</div>
+        <div style="font-size:11px;color:var(--gray-700);line-height:1.55;">${r.tobe||'—'}</div>
+      </div>
+    </div>` : '';
+
+  const interv = r.interventions ? `<div style="margin-top:10px;padding:8px 12px;background:var(--blue-lt);border-radius:6px;font-size:11px;color:#1E40AF;"><strong>Interventions:</strong> ${r.interventions}</div>` : '';
+  const notes  = r.notes ? `<div style="margin-top:8px;padding:8px 12px;background:var(--amber-lt);border-radius:6px;font-size:11px;color:#92400E;"><strong>Notes:</strong> ${r.notes}</div>` : '';
+
+  return `<div class="dim-detail-grid">${cards}</div>${asisTobeHtml}${interv}${notes}`;
+}
+
+function toggleExpand(id) {
+  expandedId = expandedId === id ? null : id;
+  renderRegister();
+}
+
+// ================================================================
+// HEATMAP
+// ================================================================
+function renderHeatmap() {
+  ['hm-tower','hm-dims','hm-ctrl','hm-radar'].forEach(k => dc(k));
+  const data = getFilteredData();
+
+  // Tower impact
+  const tAvgs = TOWERS.map(t => {
+    const rows = data.filter(r=>r.tower===t.id);
+    return rows.length ? (rows.reduce((a,r)=>a+r.impact,0)/rows.length).toFixed(2) : 0;
+  });
+  charts['hm-tower'] = new Chart(document.getElementById('chart-hm-tower').getContext('2d'),{
+    type:'bar',
+    data:{
+      labels:TOWERS.map(t=>t.id),
+      datasets:[{data:tAvgs,backgroundColor:TOWERS.map(t=>t.color+'88'),borderColor:TOWERS.map(t=>t.color),borderWidth:2,borderRadius:5}]
+    },
+    options:{plugins:{legend:{display:false}},scales:{y:{min:0,max:5}},responsive:true}
+  });
+
+  // Avg dimensions by tower
+  const dims=['pi','ti','pe','si','bi'];
+  const dimLabels=['Process','Tech','People','Skill','Behavior'];
+  const dimDatasets=dims.map((d,i)=>{
+    const cols=['#0D9488','#2563EB','#9333EA','#D97706','#DC2626'];
+    return {
+      label:dimLabels[i],
+      data:TOWERS.map(t=>{const rows=data.filter(r=>r.tower===t.id);return rows.length?(rows.reduce((a,r)=>a+r[d],0)/rows.length).toFixed(2):0;}),
+      borderColor:cols[i],backgroundColor:cols[i]+'33',tension:.3,pointRadius:4,borderWidth:2
+    };
+  });
+  charts['hm-dims'] = new Chart(document.getElementById('chart-hm-dims').getContext('2d'),{
+    type:'line',
+    data:{labels:TOWERS.map(t=>t.id),datasets:dimDatasets},
+    options:{plugins:{legend:{position:'bottom',labels:{boxWidth:10,font:{size:10}}}},scales:{y:{min:0,max:5}},responsive:true}
+  });
+
+  // Control sensitivity
+  const ctrlData = TOWERS.map(t=>{
+    const rows=data.filter(r=>r.tower===t.id);
+    return rows.length?(rows.reduce((a,r)=>a+(r.control||3),0)/rows.length).toFixed(2):0;
+  });
+  charts['hm-ctrl'] = new Chart(document.getElementById('chart-hm-ctrl').getContext('2d'),{
+    type:'bar',
+    data:{
+      labels:TOWERS.map(t=>t.id),
+      datasets:[{label:'Avg Control Sensitivity',data:ctrlData,backgroundColor:TOWERS.map(t=>t.color+'88'),borderColor:TOWERS.map(t=>t.color),borderWidth:2,borderRadius:5}]
+    },
+    options:{plugins:{legend:{display:false}},scales:{y:{min:0,max:5,title:{display:true,text:'Control Sensitivity'}}},responsive:true}
+  });
+
+  // Persona radar
+  const pMap={};
+  data.forEach(r=>{
+    const k=r.primary||'Unknown';
+    if(!pMap[k]) pMap[k]={pi:0,ti:0,pe:0,si:0,bi:0,ri:0,c:0};
+    ['pi','ti','pe','si','bi','ri'].forEach(d=>pMap[k][d]+=r[d]);
+    pMap[k].c++;
+  });
+  const top4=Object.entries(pMap).map(([name,v])=>({
+    name,
+    avgImpact:(v.pi+v.ti+v.pe+v.si+v.bi+v.ri)/v.c/6,
+    data:['pi','ti','pe','si','bi','ri'].map(d=>(v[d]/v.c).toFixed(1))
+  })).sort((a,b)=>b.avgImpact-a.avgImpact).slice(0,4);
+  const rColors=['#0D9488','#2563EB','#9333EA','#D97706'];
+  charts['hm-radar']=new Chart(document.getElementById('chart-hm-radar').getContext('2d'),{
+    type:'radar',
+    data:{
+      labels:['Process','Technology','People','Skill','Behavior','Risk'],
+      datasets:top4.map((p,i)=>({
+        label:p.name.split('/')[0].trim().substring(0,16),
+        data:p.data,
+        borderColor:rColors[i],backgroundColor:rColors[i]+'22',
+        pointBackgroundColor:rColors[i],borderWidth:2
+      }))
+    },
+    options:{scales:{r:{min:0,max:5}},plugins:{legend:{position:'bottom',labels:{boxWidth:10,font:{size:10}}}},responsive:true}
+  });
+
+  // Bars
+  const sorted=[...data].sort((a,b)=>b.impact-a.impact);
+  document.getElementById('hm-bars').innerHTML=sorted.map(r=>{
+    const pct=(r.impact/5*100).toFixed(0);
+    const col=r.risk==='High'?'#DC2626':r.risk==='Medium'?'#D97706':'#16A34A';
+    return `<div class="hbar-row">
+      <span class="tower-pill t-${r.tower}" style="margin-right:2px;">${r.tower}</span>
+      <div class="hbar-label" title="${r.title}">${r.title.substring(0,50)}${r.title.length>50?'…':''}</div>
+      <div class="hbar-bg"><div class="hbar-fill" style="width:${pct}%;background:${col};"></div></div>
+      <div class="hbar-score">${r.impact.toFixed(1)}</div>
+      <span class="risk-badge risk-${r.risk.toLowerCase()}">${r.risk}</span>
+    </div>`;
+  }).join('');
+}
+
+// ================================================================
+// STRATEGY
+// ================================================================
+function renderStrategy() {
+  const data = getFilteredData();
+  const high = data.filter(r=>r.risk==='High').length;
+  const med  = data.filter(r=>r.risk==='Medium').length;
+  document.getElementById('strategy-banner').innerHTML = `
+    <div style="font-size:11px;font-weight:700;color:#1E40AF;margin-bottom:5px;">📌 Overall Strategy Recommendation</div>
+    <div style="font-size:11px;color:#1E3A8A;line-height:1.65;">
+      Assessment covers <strong>${masterData.length} changes</strong> — <strong>${high} high-risk</strong> and <strong>${med} medium-risk</strong>.
+      Prioritise RTR and FP&A changes for early audit and control engagement. Invest in hypercare and change champion
+      networks for AP/AR and Collections teams. For AI-enabled changes, deploy <em>trust-building communication</em>
+      well before go-live. Use phased rollouts for high-resistance populations.
+    </div>`;
+
+  const pMap={};
+  data.forEach(r=>{
+    const k=r.primary||'Unknown';
+    if(!pMap[k]) pMap[k]={impact:0,c:0,ints:new Set()};
+    pMap[k].impact+=r.impact; pMap[k].c++;
+    (r.interventions||'').split(';').forEach(i=>i.trim()&&pMap[k].ints.add(i.trim()));
+  });
+  const sorted=Object.entries(pMap).sort((a,b)=>(b[1].impact/b[1].c)-(a[1].impact/a[1].c)).slice(0,9);
+  document.getElementById('int-grid').innerHTML = sorted.map(([name,v])=>{
+    const avg=v.impact/v.c;
+    const rc=avg<2.5?'Low Risk':avg<3.5?'Medium Risk':'High Risk';
+    const rcolor=avg<2.5?'var(--green)':avg<3.5?'var(--amber)':'var(--red)';
+    return `<div class="int-card">
+      <div class="int-persona">👤 ${name.substring(0,24)}</div>
+      <div class="int-risk-lv" style="color:${rcolor};">${rc} · ${avg.toFixed(1)}/5</div>
+      <div class="int-actions">${[...v.ints].slice(0,5).map(a=>`<div class="int-action"><div class="int-dot"></div><span>${a}</span></div>`).join('')}</div>
+    </div>`;
+  }).join('');
+}
+
+// ================================================================
+// TRAINING
+// ================================================================
+const TRAINING_MAP = {
+  'AP Processor':'Role-based eLearning + exception handling simulation · 8 hrs · SAP Enable Now',
+  'AP Analyst':'Workflow training + exception playbook ILT · 10 hrs · Virtual ILT + sandbox',
+  'AP Manager':'Analytics & governance coaching · 6 hrs · Manager workshops + dashboard walkthroughs',
+  'AP Lead':'Policy + controls + approval design · 8 hrs · ILT + control walkthrough',
+  'Collections Analyst':'AI prioritization + model interpretation training · 10 hrs · Coaching + virtual ILT',
+  'Cash Application Analyst':'Exception handling + trust dashboard training · 6 hrs · ILT + sandbox',
+  'Dispute Analyst':'Taxonomy + workflow governance training · 8 hrs · ILT + RCA playbook',
+  'Credit Analyst':'Credit model + rule interpretation training · 8 hrs · ILT + exception matrix',
+  'RTR Accountant':'Journal automation + controls training · 10 hrs · ILT + audit walkthrough',
+  'RTR Analyst':'Reconciliation engine + investigative playbook · 10 hrs · ILT + hypercare',
+  'Controller':'Controls certification + attestation training · 12 hrs · ILT + controls coaching',
+  'Consolidation Analyst':'Consolidation platform + data interpretation · 16 hrs · Expert ILT + parallel run',
+  'GL Analyst':'Flux analysis + AI commentary review training · 7 hrs · ILT + review checkpoints',
+  'FP&A Analyst':'Driver-based planning + SAC platform training · 14 hrs · Blended ILT + sandbox',
+  'Finance Business Partner':'Scenario modeling + commercial interpretation training · 10 hrs · Workshops + demos',
+  'FP&A Manager':'Predictive forecast governance + ML interpretation · 12 hrs · Expert ILT + governance',
+  'FP&A Head':'Rolling forecast governance + leadership messaging · 6 hrs · Executive workshop',
+};
+function renderTraining() {
+  const data = getFilteredData();
+  const pMap={};
+  data.forEach(r=>{
+    const k=r.primary||'Unknown';
+    if(!pMap[k]) pMap[k]=[];
+    pMap[k].push(r);
+  });
+  const sorted=Object.entries(pMap).sort((a,b)=>{
+    const avgA=a[1].reduce((s,r)=>s+r.impact,0)/a[1].length;
+    const avgB=b[1].reduce((s,r)=>s+r.impact,0)/b[1].length;
+    return avgB-avgA;
+  });
+  document.getElementById('training-content').innerHTML = sorted.map(([name,rows])=>{
+    const avg=(rows.reduce((s,r)=>s+r.impact,0)/rows.length).toFixed(1);
+    const maxCtrl=Math.max(...rows.map(r=>r.control||3));
+    const training=TRAINING_MAP[name]||'Role-specific training plan to be defined · TBD';
+    const priority=+avg>=3.5?'tag-red':+avg>=2.8?'tag-amber':'tag-green';
+    const pLabel=+avg>=3.5?'Critical':+avg>=2.8?'High':'Medium';
+    return `<div class="training-block">
+      <div class="training-header">
+        👤 ${name}
+        <span class="tag tag-gray" style="margin-left:auto;">${rows.length} change${rows.length!==1?'s':''}</span>
+        <span class="tag tag-gold">Avg ${avg}</span>
+        <span class="tag ${maxCtrl>=4?'tag-red':'tag-amber'}">CS ${maxCtrl}</span>
+        <span class="tag ${priority}">${pLabel} Priority</span>
+      </div>
+      <table class="training-table">
+        <thead><tr><th style="width:40%;">Change</th><th>Tower</th><th>Risk</th><th>Impact</th><th>Control</th></tr></thead>
+        <tbody>${rows.map(r=>{
+          const t=TOWERS.find(x=>x.id===r.tower);
+          return `<tr>
+            <td style="font-weight:500;">${r.title}</td>
+            <td><span class="tower-pill t-${r.tower}">${r.tower}</span></td>
+            <td><span class="risk-badge risk-${r.risk.toLowerCase()}">${r.risk}</span></td>
+            <td style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;">${r.impact.toFixed(1)}</td>
+            <td><span class="score-pill ${scoreClass(r.control||3)}">${r.control||3}</span></td>
+          </tr>`;
+        }).join('')}</tbody>
+      </table>
+      <div class="training-foot"><strong>Recommended:</strong> ${training}</div>
+    </div>`;
+  }).join('');
+}
+
+// ================================================================
+// DRAWER
+// ================================================================
+function buildDimSliders() {
+  document.getElementById('dim-sliders').innerHTML = DIM_CONFIG.map(d => `
+    <div class="dim-slider-card" id="dsc-${d.key}">
+      <div class="dim-slider-top">
+        <div class="dim-slider-left">
+          <span class="dim-slider-icon">${d.icon}</span>
+          <span class="dim-slider-name">${d.label}</span>
+        </div>
+        <span class="dim-score-badge score-c-3" id="dsv-${d.key}">3</span>
+      </div>
+      <div class="dim-scale-labels">
+        <span>1 · Low</span><span>3 · Moderate</span><span>5 · Very High</span>
+      </div>
+      <input type="range" class="dim-range" id="f-${d.key}" min="1" max="5" step="1" value="3"
+        oninput="updateSlider('${d.key}')" style="--track-pct:50%;--track-fill:#D97706;--thumb-color:#C8A84B;">
+      <div class="dim-descriptor" id="dsd-${d.key}">${DESCS[d.key][2]}</div>
+    </div>`
+  ).join('');
+}
+function updateSlider(k) {
+  const v = +document.getElementById('f-'+k).value;
+  const colors = ['','#16A34A','#2563EB','#D97706','#EA580C','#DC2626'];
+  const col = colors[v];
+  const pct = ((v-1)/4*100).toFixed(0)+'%';
+  const badge = document.getElementById('dsv-'+k);
+  badge.textContent = v;
+  badge.className = `dim-score-badge score-c-${v}`;
+  const range = document.getElementById('f-'+k);
+  range.style.setProperty('--track-pct', pct);
+  range.style.setProperty('--track-fill', col);
+  range.style.setProperty('--thumb-color', col);
+  document.getElementById('dsd-'+k).textContent = DESCS[k][v-1]||'';
+}
+function openDrawer(id) {
+  buildDimSliders();
+  editingId = id;
+  document.getElementById('drawer-title').textContent = id ? 'Edit Change' : 'Add Change';
+  if (id !== null) {
+    const r = masterData.find(x=>x.id===id);
+    if (!r) return;
+    ['tower','type','title','asis','tobe','primary','secondary','interventions','notes','owner'].forEach(f => {
+      const el = document.getElementById('f-'+f); if (el) el.value = r[f]||'';
+    });
+    document.getElementById('f-status').value = r.status||'Active';
+    document.getElementById('f-pop').value    = r.population||'Medium';
+    document.getElementById('f-readiness').value = r.readiness||3;
+    document.getElementById('f-control').value   = r.control||3;
+    DIM_CONFIG.forEach(d => {
+      document.getElementById('f-'+d.key).value = r[d.key]||3;
+      updateSlider(d.key);
+    });
+  } else {
+    ['type','title','asis','tobe','primary','secondary','interventions','notes','owner'].forEach(f => {
+      const el = document.getElementById('f-'+f); if (el) el.value = '';
+    });
+    document.getElementById('f-tower').value    = 'PTP';
+    document.getElementById('f-status').value   = 'Active';
+    document.getElementById('f-pop').value      = 'Medium';
+    document.getElementById('f-readiness').value= '3';
+    document.getElementById('f-control').value  = '3';
+    DIM_CONFIG.forEach(d => { document.getElementById('f-'+d.key).value=3; updateSlider(d.key); });
+  }
+  document.getElementById('drawer-overlay').classList.add('open');
+  document.getElementById('drawer').classList.add('open');
+}
+function closeDrawer() {
+  document.getElementById('drawer-overlay').classList.remove('open');
+  document.getElementById('drawer').classList.remove('open');
+  editingId = null;
+}
+function saveRow() {
+  const title = document.getElementById('f-title').value.trim();
+  if (!title) { alert('Please enter a change title.'); return; }
+  const row = {
+    tower:document.getElementById('f-tower').value,
+    type:document.getElementById('f-type').value,
+    title,
+    asis:document.getElementById('f-asis').value,
+    tobe:document.getElementById('f-tobe').value,
+    primary:document.getElementById('f-primary').value,
+    secondary:document.getElementById('f-secondary').value,
+    population:document.getElementById('f-pop').value,
+    pi:+document.getElementById('f-pi').value,
+    ti:+document.getElementById('f-ti').value,
+    pe:+document.getElementById('f-pe').value,
+    si:+document.getElementById('f-si').value,
+    bi:+document.getElementById('f-bi').value,
+    ri:+document.getElementById('f-ri').value,
+    readiness:+document.getElementById('f-readiness').value,
+    control:+document.getElementById('f-control').value,
+    resistance:3, training:3, comm:3,
+    interventions:document.getElementById('f-interventions').value,
+    notes:document.getElementById('f-notes').value,
+    owner:document.getElementById('f-owner').value,
+    status:document.getElementById('f-status').value,
+  };
+  row.impact = calcImpact(row); row.risk = riskLevel(row.impact);
+  if (editingId !== null) {
+    const idx = masterData.findIndex(x=>x.id===editingId);
+    masterData[idx] = {...row, id:editingId};
+  } else {
+    masterData.push({...row, id:nextId++});
+  }
+  recalcAll(); persistToStorage(); closeDrawer();
+  if (currentPage==='register') renderRegister();
+  if (currentPage==='overview') renderOverview();
+}
+function deleteRow(id) {
+  if (!confirm('Remove this change?')) return;
+  masterData = masterData.filter(r=>r.id!==id);
+  recalcAll(); persistToStorage(); renderRegister();
+}
+
+// ================================================================
+// STORAGE
+// ================================================================
+const SK = 'fin_change_v4';
+function persistToStorage() {
+  try {
+    localStorage.setItem(SK, JSON.stringify({masterData,nextId,weights,savedAt:new Date().toISOString()}));
+    document.getElementById('autosave-dot').style.background = 'var(--green)';
+    document.getElementById('autosave-text').textContent = 'Saved · '+new Date().toLocaleTimeString(undefined,{hour:'2-digit',minute:'2-digit'});
+  } catch(e){}
+}
+function loadFromStorage() {
+  try {
+    const raw = localStorage.getItem(SK); if (!raw) return false;
+    const p = JSON.parse(raw);
+    masterData = p.masterData; nextId = p.nextId;
+    Object.assign(weights, p.weights);
+    return true;
+  } catch(e) { return false; }
+}
+function saveSession() {
+  const blob = new Blob([JSON.stringify({masterData,nextId,weights,savedAt:new Date().toISOString()})],{type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'finance_change_v4_'+new Date().toISOString().slice(0,10)+'.json';
+  a.click();
+}
+function loadSessionBtn() { document.getElementById('loadFile').click(); }
+function loadSession(e) {
+  const file = e.target.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    try {
+      const p = JSON.parse(ev.target.result);
+      masterData = p.masterData; nextId = p.nextId;
+      Object.assign(weights, p.weights||{});
+      recalcAll(); navigate(currentPage);
+    } catch(err) { alert('Invalid backup file.'); }
+  };
+  reader.readAsText(file);
+}
+function clearStorage() {
+  if (!confirm('Reset all data to defaults?')) return;
+  localStorage.removeItem(SK);
+  init();
+}
+function exportTSV() {
+  const data = getFilteredData();
+  const header = ['Tower','Change','Primary Persona','Population','Impact','Risk','Status','PI','TI','PE','SI','BI','RI','Control','Interventions'].join('\t');
+  const rows = data.map(r=>[r.tower,r.title,r.primary,r.population,r.impact.toFixed(2),r.risk,r.status||'Active',r.pi,r.ti,r.pe,r.si,r.bi,r.ri,r.control||3,r.interventions||''].join('\t'));
+  const blob = new Blob([[header,...rows].join('\n')],{type:'text/plain'});
+  const a = document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='finance_change_export.tsv'; a.click();
+}
+
+// ================================================================
+// CLOUDANT SAVE / LOAD
+// ================================================================
+async function saveToCloudant() {
+  const doc = {
+    _id: "finance_state",
+    masterData,
+    weights,
+    nextId,
+    timestamp: new Date().toISOString()
+  };
+  const url = `${CLOUDANT_HOST}/${CLOUDANT_DB}/finance_state`;
+  try {
+    const res = await fetch(url, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": "Basic " + btoa("apikey:" + CLOUDANT_API_KEY)
+      },
+      body: JSON.stringify(doc)
+    });
+    if (!res.ok) {
+      alert("Cloudant save FAILED");
+      return;
+    }
+    alert("Successfully saved to IBM Cloudant!");
+  } catch (e) {
+    alert("Error saving to Cloudant: " + e);
+  }
+}
+
+async function loadFromCloudant() {
+  const url = `${CLOUDANT_HOST}/${CLOUDANT_DB}/finance_state`;
+  try {
+    const res = await fetch(url, {
+      headers: {
+        "Authorization": "Basic " + btoa("apikey:" + CLOUDANT_API_KEY)
+      }
+    });
+    if (!res.ok) {
+      alert("No Cloudant data found");
+      return;
+    }
+    const doc = await res.json();
+    masterData = doc.masterData;
+    weights    = doc.weights;
+    nextId     = doc.nextId;
+    recalcAll();
+    navigate("overview");
+    alert("Data restored from IBM Cloudant!");
+  } catch (e) {
+    alert("Cloudant load error: " + e);
+  }
+}
+
+// ================================================================
+// INIT
+// ================================================================
+function init() {
+  const loaded = loadFromStorage();
+  if (!loaded) {
+    masterData = SEED_DATA.map((r,i) => ({...r, id:i+1}));
+    nextId = masterData.length + 1;
+  }
+  recalcAll();
+  renderOverview();
+}
+init();
+</script>
+</body>
+</html>
