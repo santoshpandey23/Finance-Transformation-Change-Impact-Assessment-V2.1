@@ -1901,21 +1901,24 @@ async function saveToCloudant() {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": "Basic " + btoa("apikey:" + CLOUDANT_API_KEY)
+        "Authorization": "Basic " + btoa("apikey:" + CLOUDANT_API_KEY),
+        "Accept": "application/json"
       },
       body: JSON.stringify(doc)
     });
+    const text = await res.text();   // <-- get Cloudant response
     if (!res.ok) {
-      alert("Cloudant save FAILED");
+      alert("Cloudant save FAILED:\n\n" + text);
+      console.error("Cloudant error:", text);
       return;
     }
     alert("Successfully saved to IBM Cloudant!");
   } catch (e) {
-    alert("Error saving to Cloudant: " + e);
+    alert("Cloudant fetch error:\n\n" + e);
+    console.error("Cloudant fetch error:", e);
   }
 }
-
-async function loadFromCloudant() {
+  async function loadFromCloudant() {
   const url = `${CLOUDANT_HOST}/${CLOUDANT_DB}/finance_state`;
   try {
     const res = await fetch(url, {
